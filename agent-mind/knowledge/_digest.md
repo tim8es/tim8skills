@@ -1,0 +1,78 @@
+# Knowledge Digest
+_High-confidence directives. `critical`/`major` badges indicate review severity._
+_Load domain files for full detail: context, when-not, smells, evidence._
+
+
+## ENGINEERING
+_In this skill, **engineering** means **software engineering**: writing, reviewing, and refactoring source code — quality, architecture, security, performance, and systems patterns._
+
+### engineering/architecture
+- **[eng.A3]** `critical` An internal refactor changes the interface exposed to callers — or a module leaks internal types through its public… → Keep public interfaces minimal and explicitly versioned. Internal changes must not break callers. When a contract must… (scaling)
+- **[eng.A1]** `major` A design introduces layers, abstractions, or patterns beyond what current concrete requirements demand. → Challenge every layer: what problem does it solve *right now*? Remove what can't be justified. Complexity must earn its… (maintainability + scaling)
+- **[eng.A2]** `major` Business logic or domain code imports infrastructure details directly — an ORM, HTTP client, a specific vendor SDK, or… → Invert the dependency: define an interface or abstraction in the domain layer; implement it in the infrastructure… (scaling + maintainability)
+- **[eng.A4]** `major` A proposed change sacrifices clarity, simplicity, or correctness for performance without profile data showing the… → Reject the optimization until there is measurement. Write clear code first; profile; then optimize only the proven hot… (efficiency + readability)
+- **[eng.A5]** `major` A component is becoming entangled — imported everywhere, referenced in unrelated modules, or is the one thing nobody… → Isolate it behind a narrow interface. Minimize its surface. The goal: if requirements change, the component can be… (scaling)
+
+### engineering/code-design
+- **[eng.F5]** `critical` A function's name and signature suggest it is pure or read-only, but it performs I/O, mutates global state, or produces… → Remove the hidden effect, or make it explicit in the function's name and signature. (readability + maintainability)
+- **[eng.F1]** `major` A function can be described only by using "and" — it validates *and* transforms *and* persists. Or it mixes high-level… → Extract each responsibility into its own function with a descriptive name. (maintainability + readability)
+- **[eng.F2]** `major` A function that looks like a query (returns a value, named `getX`/`isX`) also mutates state, writes to I/O, or triggers… → Split into a pure query (returns value, no side effects) and a separate command (mutates state, returns void/status). (readability)
+- **[eng.F3]** `major` A function has 3+ positional parameters, or a boolean literal (`true`/`false`) appears at a call site. → For boolean flags — split into two named functions or replace with an enum/options object. For many params — introduce… (true)
+- **[eng.F4]** `major` A module or class exposes nearly as many public methods as it has lines of implementation, or a wrapper function adds… → Hide complexity behind the narrowest interface that serves callers. Move decision logic inside; expose only what… (maintainability + scaling)
+
+### engineering/maintainability
+- **[eng.M4]** `critical` A single logical change requires edits to many unrelated files (shotgun surgery), or a module imports dependencies from… → Co-locate code that changes for the same reason. Break dependencies between code that changes for different reasons. (maintainability + scaling)
+- **[eng.M5]** `critical` An error is caught and silenced, logged without action, or converted to a null/false return that callers are unlikely… → Let errors propagate to the layer with enough context to decide. Fail fast on programmer errors. For expected failures,… (maintainability)
+- **[eng.M7]** `critical` Code is being changed and there are no tests covering the affected behavior, or tests assert implementation details… → Before refactoring untested code, write characterization tests to capture its current behavior. Test behavior, not… (maintainability)
+- **[eng.M1]** `major` The same *decision* — a business rule, formula, validation logic, or constant — appears in multiple places and would… → Extract a single authoritative representation. Two identical code lines representing *different* decisions are not a… (maintainability)
+- **[eng.M2]** `major` Two pieces of code look similar and there's an impulse to extract a shared abstraction after seeing only 1–2… → Tolerate the duplication until the same *decision* repeats ~3× and all callers genuinely share the same reason to… (maintainability)
+- **[eng.M3]** `major` Code adds generality, config options, or extension points for requirements that don't exist yet. → Remove speculative features. Implement only what current concrete requirements demand. (maintainability + efficiency)
+- **[eng.M8]** `major` A PR mixes multiple logical changes, exceeds ~400 lines of diff, or has a commit message like "misc fixes" or "wip." → Split into separate, self-contained PRs — one logical change each. Write a commit message that describes what and why. (maintainability + process)
+- **[eng.M9]** A code review comment addresses a personal style preference rather than a real correctness, security, or… → Mark it as `Nit:` explicitly and make it non-blocking. Reserve blocking feedback for actual defects. Automate style… (process)
+- **[eng.M6]** While editing a file, a small, clearly improvable issue is visible adjacent to the current change. → Fix it as part of the change. Keep the improvement in-scope and small. Don't launch a refactoring expedition — just… (maintainability)
+
+### engineering/naming
+- **[eng.N1]** `major` An identifier's part of speech doesn't match its role — a function named as a noun (`price()`), a variable named as a… → Rename so variables/types are nouns answering "what is this?" and functions start with a verb answering "what does it… (readability)
+- **[eng.N2]** `major` A boolean variable is named as a noun or adjective (`status`, `active`, `enabled`). → Rename with prefix `is`, `has`, `can`, or `should` — (`isActive`, `hasToken`, `canEdit`, `shouldRetry`). (isActive)
+- **[eng.N4]** `major` An identifier uses transliterated characters from another language (`knopka`, `polzovatel`, `tovar`). → Replace with plain English (`button`, `user`, `product`). If no good translation exists, use the original term directly… (maintainability)
+- **[eng.N5]** `major` An identifier is abbreviated or shortened to the point where its meaning requires context to decode (`d`, `tmp`, `val`,… → Use the full descriptive name. Scale length to scope: a 3-line loop index `i` is fine; a module export needs a full… (readability)
+- **[eng.N3]** A value that never changes at runtime is named in camelCase or lowercase. → Rename to `UPPER_SNAKE_CASE` — `MAX_USERS`, `API_URL`, `DEFAULT_TIMEOUT_MS`. (readability + maintainability)
+- **[eng.N6]** An identifier contains words that add no meaning: `data`, `info`, `value`, `manager`, `object`, `helper`, `util`. → Remove the filler. `userData` → `user`; `configObject` → `config`; `paymentManager` → `payments`. (readability)
+
+### engineering/performance
+- **[eng.P1]** `critical` A performance concern exists and the proposed solution is a micro-optimization while the underlying algorithm or data… → Address algorithmic complexity first. Replace linear scan with hash lookup, repeated sort with sorted structure, O(n²)… (100× at n=1M)
+- **[eng.P4]** `critical` A loop issues one database query, one HTTP request, or one file read per item in a collection. → Replace with a single bulk operation: `WHERE id IN (...)`, a batch API endpoint, or prefetched related data. Move I/O… (efficiency)
+- **[eng.P2]** `major` A performance-sensitive path traverses a linked list, jumps between scattered heap objects, or accesses fields from… → Reorganize data so hot access paths read memory sequentially. Group fields that are accessed together. Prefer arrays… (efficiency)
+- **[eng.P3]** `major` A frequently-called path creates new objects, buffers, or collections on every invocation without reuse. → Measure GC pressure (p99 latency, GC pause metrics). Where allocation is confirmed as a bottleneck, introduce pooling,… (efficiency)
+- **[eng.P6]** `major` Concurrency is being introduced without profiling to confirm whether the bottleneck is I/O-bound or CPU-bound. → Profile first. I/O-bound → async/event-loop or non-blocking I/O. CPU-bound → true parallelism (threads, processes,… (efficiency + maintainability)
+- **[eng.P7]** `major` A change trades code clarity for performance using bit manipulation, manual memory management, or other hard-to-read… → Isolate behind a clear interface. Comment with: (1) the measured bottleneck, (2) the numbers that justified the… (maintainability + efficiency)
+- **[eng.P5]** Code computes a value or makes a call before checking whether the result will actually be used. Or a compound condition… → Reorder conditions cheapest-first. Defer expensive computation until after the condition that gates it. (efficiency)
+
+### engineering/readability
+- **[eng.R2]** `major` Understanding a piece of code requires knowing the state of a distant variable, the contents of another file, or the… → Move related facts closer together. Extract distant dependencies into parameters. Prefer immutable state. Reduce the… (readability + maintainability)
+- **[eng.R1]** Code uses a clever trick, nested ternary, or compressed expression that requires mental effort to decode — even if… → Rewrite for the reader. Expand the expression, introduce an intermediate variable with a descriptive name, or add a… (readability)
+- **[eng.R4]** A new piece of code introduces a different convention or style than the surrounding codebase — even if the new way is… → Match surrounding conventions. Raise the convention change as a separate decision; don't introduce inconsistency in a… (readability + maintainability)
+- **[eng.R3]** A comment narrates what the code does rather than why — the comment could be derived by reading the code itself. → Delete what-comments. Write why-comments: the intent, the constraint, the non-obvious reason. Example: `// retry:… (maintainability)
+
+### engineering/security
+- **[eng.S1]** `critical` Data crosses a trust boundary — from user input, API response, message queue, file read, or env var — and flows into… → Validate type, range, shape, and encoding at the boundary before the data enters any business logic. Use a schema… (security)
+- **[eng.S2]** `critical` User-controlled or external data is concatenated, formatted, or interpolated into a SQL query, shell command, HTML… → Use parameterized queries, prepared statements, and context-aware output encoding. There is no safe way to interpolate… (security)
+- **[eng.S3]** `critical` A service, DB connection, token, or role has broader permissions than the specific operation it performs requires. → Reduce permissions to the minimum needed. Read-only DB connections for read-only services. Scope tokens to specific… (security)
+- **[eng.S4]** `critical` Security is enforced only at one layer — e.g. only at the API gateway, only at the network perimeter, or only in the… → Add controls at multiple layers. Authentication at the gateway AND authorization in each service. Input validation at… (security)
+- **[eng.S5]** `critical` An error or unexpected condition causes access to be granted (fail-open), or a detailed error message (stack trace,… → On any error or unrecognised condition, deny access and return a generic error message externally. Log full diagnostic… (security)
+- **[eng.S6]** `critical` A password, API key, token, certificate, or other secret appears in source code, a config file that could be committed,… → Remove it immediately. Use environment variables, a secret manager (Vault, AWS Secrets Manager, GCP Secret Manager).… (security)
+- **[eng.S7]** `critical` Code implements a cryptographic primitive, key exchange protocol, token signing, or password hashing from scratch. → Use vetted libraries: libsodium, BouncyCastle, or stdlib crypto. Use bcrypt/argon2 for passwords. Use well-reviewed JWT… (security)
+- **[eng.S8]** `major` Endpoints, features, permissions, or capabilities exist in production that aren't actively used, or interfaces are… → Disable unused endpoints. Remove unused features. Shorten token lifetimes. Narrow API interfaces to what callers… (security)
+
+### engineering/systems
+- **[eng.SE1]** `critical` Presentation logic (HTTP handling, serialization) and business logic coexist in the same function or class, or a domain… → Separate the layers. Route handlers handle HTTP and delegate to services. Services contain business rules and delegate… (maintainability + scaling)
+- **[eng.SE4]** `critical` An operation crossing a network or queue boundary is not safe to retry — running it twice would produce duplicate side… → Add an idempotency key. On retry with the same key, return the original result without re-executing. Design consumers… (reliability)
+- **[eng.SE2]** `major` A class hierarchy is deeper than 2 levels, a subclass overrides a method only to disable it, or a superclass change… → Replace inheritance with composition. Extract the behavior into a focused component and inject it. Make dependencies… (maintainability)
+- **[eng.SE5]** `major` Behavior is determined by file naming, directory structure, convention, or a global registry — and changing behavior… → Make dependencies and behavior explicit: pass them as parameters, declare them at the composition root, make them… (readability + maintainability)
+- **[eng.SE6]** `major` A service is being built without structured logs, meaningful metrics, or distributed trace context — or observability… → Add structured logging, metrics, and trace context from day one. Log meaningful business events, not just errors.… (maintainability + operations)
+- **[eng.SE7]** `major` Required configuration (env vars, secrets, DB connections) is read lazily — deep inside request handling — rather than… → Validate all required configuration at startup before the service accepts any traffic. If required config is missing or… (reliability + security)
+- **[eng.CV1]** `major` A public API has a breaking change in a minor or patch release, or MAJOR is bumped for a non-breaking change. → MAJOR for breaking changes. MINOR for new backward-compatible capabilities. PATCH for bug fixes. Treat version numbers… (conventions)
+- **[eng.CV3]** `major` An API endpoint uses the wrong HTTP verb, uses inconsistent resource naming, or returns different error shapes from… → GET = safe + idempotent (never mutates). POST = create. PUT/PATCH = update. DELETE = remove. Resources = plural nouns.… (conventions)
+- **[eng.CV4]** `major` Dependencies are unpinned (`*`, `^` without lock file), or third-party packages imported for functionality available in… → Pin exact versions in lock files. Commit the lock file. Run `npm audit`/`pip audit` in CI. Prefer stdlib for simple… (maintainability + security)
+- **[eng.SE3]** Code chains multiple method calls on the result of another call: `order.getCustomer().getAddress().getCity()` — or… → Move the logic into the object that owns the data. Ask for a result, not for data to compute a result from. One dot,… (maintainability)
+- **[eng.CV2]** A commit message uses vague language: "wip", "fix", "stuff", "misc changes." → Use conventional commits: `feat(scope): what and why`, `fix(scope): what and why`. Breaking changes in footer as… (conventions + process)

@@ -1,0 +1,4809 @@
+<!doctype html>
+<html lang="ru" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script>(function(){var t=localStorage.getItem('kanban:theme')||(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.dataset.theme=t;})()</script>
+    <title>Kanban — Obsidian-compatible dashboard</title>
+    <style>
+      /* ════════════ VARIABLES & THEME ════════════ */
+      :root {
+        --paper: #faf9f6;
+        --ink: #1c1b19;
+        --muted: #6f6b63;
+        --faint: #a8a39a;
+        --line: #e7e3da;
+        --card: #ffffff;
+        --accent: #c5482f;
+        --accent-soft: #f6e7e2;
+        --ok: #3f7d57;
+        --warn: #b06a1e;
+        --shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 2px 8px rgba(0, 0, 0, 0.04);
+        --font-ui:
+          'Helvetica Neue', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+          Roboto, sans-serif;
+        --sans: var(--font-ui);
+        --mono: var(--font-ui);
+      }
+      [data-theme='dark'] {
+        --paper: #16151a;
+        --ink: #e9e6df;
+        --muted: #9b958c;
+        --faint: #6b665e;
+        --line: #2a2832;
+        --card: #1f1e25;
+        --accent: #e0654d;
+        --accent-soft: #2e211d;
+        --ok: #6fae86;
+        --warn: #d39444;
+        --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 14px rgba(0, 0, 0, 0.25);
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        height: 100%;
+      }
+      body {
+        margin: 0;
+        background: var(--paper);
+        color: var(--ink);
+        font-family: var(--sans);
+        font-size: 14px;
+        line-height: 1.45;
+        -webkit-font-smoothing: antialiased;
+        display: flex;
+        height: 100vh;
+        overflow: hidden;
+      }
+
+      /* ════════════ SIDEBAR (BOARD LIST) ════════════ */
+      /* sidebar */
+      aside {
+        width: 212px;
+        flex: 0 0 212px;
+        border-right: 1px solid var(--line);
+        display: flex;
+        flex-direction: column;
+        background: var(--paper);
+      }
+      .brand {
+        padding: 18px 18px 12px;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+      }
+      .brand small {
+        display: block;
+        font: 400 11px/1.4 var(--mono);
+        color: var(--faint);
+        letter-spacing: 0;
+      }
+      .side-h {
+        padding: 14px 18px 6px;
+        font: 600 10.5px/1 var(--mono);
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--faint);
+      }
+      .boards {
+        flex: 1;
+        overflow: auto;
+        padding: 0 8px;
+      }
+      .board-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 10px;
+        border-radius: 7px;
+        cursor: pointer;
+        color: var(--muted);
+        font-size: 13px;
+        overflow: hidden;
+        transition: 0.12s;
+      }
+      .board-item .board-name {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        min-width: 0;
+        flex: 1 1 0;
+      }
+      .board-item:hover {
+        background: var(--accent-soft);
+        color: var(--accent);
+      }
+      .board-item.active {
+        background: var(--accent-soft);
+        color: var(--ink);
+        font-weight: 600;
+      }
+      .board-item .dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--faint);
+        flex: 0 0 6px;
+      }
+      .board-item.active .dot {
+        background: var(--accent);
+      }
+      .board-item .n {
+        margin-left: auto;
+        flex-shrink: 0;
+        font: 500 11px/1 var(--mono);
+        color: var(--faint);
+      }
+      .ctx-menu {
+        position: fixed;
+        background: var(--paper);
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        box-shadow: var(--shadow);
+        z-index: 9999;
+        min-width: 160px;
+        overflow: hidden;
+        padding: 6px;
+      }
+      .ctx-menu button {
+        display: block;
+        width: 100%;
+        background: none;
+        border: none;
+        border-radius: 5px;
+        padding: 7px 10px;
+        font: 13px/1.4 var(--sans);
+        color: var(--ink);
+        text-align: left;
+        cursor: pointer;
+      }
+      .ctx-menu button:hover,
+      .view-pop .switch:hover,
+      .tag-drop-item:hover,
+      .filter-preset:hover { background: var(--accent-soft); color: var(--accent); }
+      .ctx-menu button.danger { color: var(--accent); }
+      .side-foot {
+        padding: 12px;
+        border-top: 1px solid var(--line);
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
+      }
+
+      button,
+      .btn {
+        font-family: inherit;
+        font-size: 12px;
+        color: var(--ink);
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        padding: 6px 10px;
+        cursor: pointer;
+        transition: 0.12s;
+      }
+      button:hover,
+      .btn:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      button.primary {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #fff;
+      }
+      button.primary:hover {
+        filter: brightness(1.06);
+        color: #fff;
+      }
+      button.ghost {
+        background: transparent;
+        border-color: transparent;
+        color: var(--muted);
+        padding: 5px 8px;
+      }
+      button.ghost:hover {
+        color: var(--accent);
+        background: var(--accent-soft);
+      }
+      button.ghost.on {
+        color: var(--accent);
+        background: var(--accent-soft);
+      }
+      /* danger: destructive action (Delete) */
+      button.danger {
+        color: var(--accent);
+        border-color: transparent;
+        background: transparent;
+      }
+      button.danger:hover {
+        color: #fff;
+        background: var(--accent);
+        border-color: var(--accent);
+        filter: none;
+      }
+      /* switch: pill toggle (instead of a raw checkbox) */
+      .switch {
+        display: inline-flex;
+        align-items: center;
+        gap: 9px;
+        font-size: 13px;
+        color: var(--ink);
+        cursor: pointer;
+        user-select: none;
+        margin-bottom: 0;
+      }
+      .switch input {
+        position: absolute;
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+      .switch .track {
+        position: relative;
+        width: 34px;
+        height: 19px;
+        border-radius: 19px;
+        background: var(--line);
+        transition: 0.15s;
+        flex: 0 0 auto;
+      }
+      .switch .track::after {
+        content: '';
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 15px;
+        height: 15px;
+        border-radius: 50%;
+        background: #fff;
+        transition: 0.15s;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+      }
+      .switch input:checked + .track {
+        background: var(--accent);
+      }
+      .switch input:checked + .track::after {
+        transform: translateX(15px);
+      }
+      .switch input:focus-visible + .track {
+        outline: 2px solid var(--accent-soft);
+        outline-offset: 1px;
+      }
+      /* "View" dropdown: card display settings */
+      .view-menu {
+        position: relative;
+        display: inline-block;
+      }
+      .view-pop {
+        position: absolute;
+        top: calc(100% + 6px);
+        right: 0;
+        z-index: 40;
+        min-width: 200px;
+        background: var(--paper);
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        box-shadow: var(--shadow);
+        padding: 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .view-pop .vp-group {
+        font: 600 10px/1 var(--sans);
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--faint);
+        padding: 8px 8px 4px;
+      }
+      .view-pop .switch {
+        width: 100%;
+        padding: 5px 8px;
+        border-radius: 6px;
+        font-size: 13px;
+        color: var(--ink);
+        cursor: pointer;
+        transition: 0.12s;
+      }
+      /* ════════════ MAIN AREA: TOPBAR, COLUMNS, CARDS ════════════ */
+      /* main */
+      main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+      }
+      .topbar {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 20px;
+        border-bottom: 1px solid var(--line);
+      }
+      .topbar h1 {
+        font-size: 16px;
+        margin: 0;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .topbar .file {
+        font: 400 11px/1 var(--mono);
+        color: var(--faint);
+      }
+      .spacer {
+        flex: 1;
+      }
+      .search {
+        font-family: var(--mono);
+        font-size: 12px;
+        padding: 7px 10px;
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        background: var(--card);
+        color: var(--ink);
+        width: 180px;
+      }
+      .search-wrap { position: relative; display: inline-flex; }
+      /* padding/rhythm mirrors .view-pop so both popovers look consistent */
+      .filter-drop {
+        position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 201;
+        background: var(--paper); border: 1px solid var(--line); border-radius: 7px;
+        box-shadow: var(--shadow); display: none; min-width: 140px; padding: 8px;
+      }
+      .filter-drop.open { display: block; }
+      .filter-drop-group { padding: 0; }
+      .filter-drop-group + .filter-drop-group {
+        border-top: 1px solid var(--line); margin-top: 6px; padding-top: 6px;
+      }
+      .filter-drop.artifact-mode .filter-drop-group + .filter-drop-group {
+        border-top: 0; margin-top: 0; padding-top: 0;
+      }
+      .filter-drop-label {
+        padding: 8px 8px 4px;
+        font: 600 9px/1 var(--mono); color: var(--faint); text-transform: uppercase;
+        letter-spacing: .04em;
+      }
+      .filter-preset {
+        display: flex; align-items: center; gap: 8px; width: 100%; padding: 5px 8px;
+        border: none; border-radius: 6px; background: transparent; text-align: left;
+        cursor: pointer; font: 500 12px/1.4 var(--mono); color: var(--ink);
+      }
+      .filter-preset.active { background: var(--accent-soft); color: var(--accent); }
+      .filter-chip {
+        display: none; align-items: center; gap: 4px; max-width: 140px; padding: 6px 8px;
+        border: 1px solid var(--line); border-radius: 7px; background: var(--card);
+        color: var(--muted); font: 600 11px/1 var(--mono); white-space: nowrap;
+        overflow: hidden; text-overflow: ellipsis;
+      }
+      .filter-chip.show { display: inline-flex; }
+      .artifact-page {
+        flex: 1; overflow: auto; padding: 12px 20px 24px; background: var(--bg);
+      }
+      .artifact-page.hidden { display: none; }
+      .artifact-grid {
+        display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px;
+      }
+      .artifact-page .empty-note { padding: 12px 2px; color: var(--faint); font: 500 12px/1.4 var(--mono); }
+      .artifact-item {
+        display: grid; grid-template-columns: 20px 1fr; gap: 8px; min-width: 0;
+        padding: 10px; border: 1px solid var(--line); border-radius: 7px; background: var(--paper);
+        color: var(--ink);
+      }
+      .artifact-item.missing { color: var(--faint); }
+      .artifact-icon { color: var(--accent); font: 700 14px/1 var(--mono); padding-top: 1px; }
+      .artifact-title { font: 700 13px/1.3 var(--sans); overflow-wrap: anywhere; }
+      .artifact-meta { margin-top: 3px; color: var(--muted); font: 500 11px/1.35 var(--mono); }
+      .artifact-sources {
+        margin-top: 6px; display: flex; flex-wrap: wrap; gap: 4px;
+      }
+      .artifact-source-chip {
+        max-width: 180px; padding: 3px 6px; border: 1px solid var(--line); border-radius: 999px;
+        background: var(--card); color: var(--muted); font: 600 10.5px/1 var(--mono);
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      }
+      .artifact-source-chip.clickable { cursor: pointer; }
+      .artifact-source-chip.clickable:hover { border-color: var(--accent); color: var(--accent); }
+      .artifact-actions { margin-top: 9px; display: flex; gap: 6px; flex-wrap: wrap; }
+      .artifact-action {
+        border: 1px solid var(--line); border-radius: 6px; background: var(--card); color: var(--ink);
+        padding: 5px 7px; cursor: pointer; font: 700 11px/1 var(--mono);
+      }
+      .artifact-action:hover { border-color: var(--accent); color: var(--accent); }
+      .dirty {
+        color: var(--accent);
+        font: 600 11px/1 var(--mono);
+      }
+
+      .columns {
+        flex: 1;
+        display: flex;
+        gap: 14px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        padding: 16px 20px;
+      }
+      .col {
+        flex: 0 0 248px;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+      }
+      .col-h {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 4px 4px 10px;
+        font: 600 10.5px/1 var(--mono);
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .col-h .bar {
+        width: 3px;
+        height: 13px;
+        border-radius: 2px;
+        background: var(--faint);
+      }
+      .col-h .cnt {
+        margin-left: auto;
+        color: var(--faint);
+      }
+      .col[data-col='IN PROGRESS'] .bar {
+        background: var(--accent);
+      }
+      .col[data-col='DONE'] .bar {
+        background: var(--ok);
+      }
+      .col[data-col='BLOCKED'] .bar,
+      .col[data-col='REJECTED'] .bar,
+      .col[data-col='REWORK'] .bar {
+        background: var(--accent);
+      }
+      .col[data-col='TESTING'] .bar,
+      .col[data-col='IN REVIEW'] .bar {
+        background: var(--warn);
+      }
+      .col[data-col='UAT'] .bar {
+        background: var(--ok);
+      }
+      .drop {
+        flex: 1;
+        overflow-y: auto;
+        padding: 2px;
+        border-radius: 9px;
+        transition: background 0.12s;
+        min-height: 40px;
+      }
+      .drop.over {
+        background: var(--accent-soft);
+        outline: 1px dashed var(--accent);
+      }
+      .col-empty {
+        display: none;
+      }
+      #columns.drag-in-progress .col-empty {
+        display: flex;
+        opacity: 0.6;
+        flex: 0 0 46px;
+      }
+      /* In a narrow empty column the header goes vertical; hide the counter and button */
+      #columns.drag-in-progress .col-empty .col-h {
+        writing-mode: vertical-rl;
+        padding: 8px 2px;
+        gap: 6px;
+        overflow: hidden;
+        white-space: nowrap;
+      }
+      #columns.drag-in-progress .col-empty .col-h .bar,
+      #columns.drag-in-progress .col-empty .col-h .cnt {
+        display: none;
+      }
+      #columns.drag-in-progress .col-empty .drop {
+        min-height: 80px;
+        border: 1px dashed var(--line);
+        border-radius: 9px;
+      }
+      /* user toggled "show empty columns" — override the default hide */
+      #columns.show-empty .col-empty {
+        display: flex;
+      }
+
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        padding: 10px 11px;
+        margin-bottom: 9px;
+        user-select: none;
+        box-shadow: var(--shadow);
+        cursor: grab;
+        transition:
+          transform 0.08s,
+          border-color 0.12s;
+      }
+      .card:hover {
+        border-color: var(--accent);
+      }
+      .card:active {
+        cursor: grabbing;
+      }
+      .card.dragging {
+        opacity: 0.4;
+      }
+      /* Card body is mouse-transparent → mousedown always hits .card
+         (draggable=true) instead of a text child. Otherwise Chrome treats a
+         press on text as a selection and dragstart never fires. Interactive
+         elements (checkbox, wikilinks) reclaim their clicks below. */
+      .card .row1,
+      .card .desc,
+      .card .meta,
+      .card .dod,
+      .card .links {
+        pointer-events: none;
+      }
+      .card .ck,
+      .card .wl {
+        pointer-events: auto;
+      }
+      .card .row1 {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        margin-bottom: 2px;
+      }
+      .card .tblock {
+        min-width: 0;
+        flex: 1;
+      }
+      .card .title {
+        font-size: 13.5px;
+        font-weight: 600;
+        line-height: 1.3;
+        word-break: break-word;
+      }
+      .card .type {
+        font: 600 9.5px/1 var(--mono);
+        letter-spacing: 0.09em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin-top: 5px;
+      }
+      .card .tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 3px;
+        margin-top: 4px;
+      }
+      .card .tag {
+        font: 600 9px/1 var(--mono);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 3px;
+        padding: 1px 4px;
+      }
+      .card.done .title {
+        text-decoration: line-through;
+        color: var(--muted);
+      }
+      .card .desc {
+        font-size: 12px;
+        line-height: 1.45;
+        color: var(--muted);
+        margin-top: 7px;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+      .card .dod {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 8px;
+      }
+      .card .dod-c {
+        font: 500 10.5px/1 var(--mono);
+        color: var(--muted);
+        white-space: nowrap;
+      }
+      .card .dod-bar {
+        flex: 1;
+        height: 4px;
+        background: var(--line);
+        border-radius: 2px;
+        overflow: hidden;
+      }
+      .card .dod-bar i {
+        display: block;
+        height: 100%;
+        background: var(--ok);
+        transition: width 0.15s;
+      }
+      .card .meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 8px;
+        font: 500 11px/1 var(--mono);
+        color: var(--muted);
+      }
+      .card .meta span {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+      }
+      .card .est {
+        background: var(--paper);
+        border: 1px solid var(--line);
+        padding: 2px 5px;
+        border-radius: 4px;
+      }
+      .card .pri-h {
+        color: var(--accent);
+      }
+      .card .pri-m {
+        color: var(--warn);
+      }
+      .card .pri-l {
+        color: var(--faint);
+      }
+      .card .links {
+        margin-top: 7px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+      }
+      .wl {
+        font: 500 11px/1 var(--mono);
+        color: var(--accent);
+        background: var(--accent-soft);
+        padding: 2px 6px;
+        border-radius: 4px;
+        cursor: pointer;
+        border: 1px solid transparent;
+      }
+      .wl:hover {
+        border-color: var(--accent);
+      }
+      .wl.missing {
+        color: var(--faint);
+        background: var(--paper);
+        text-decoration: line-through;
+      }
+      .wl.wl-file {
+        background: var(--paper);
+        color: var(--muted);
+        border-color: var(--line);
+      }
+      .wl.wl-file:hover {
+        background: var(--card);
+        border-color: var(--muted);
+      }
+      #flashMsg {
+        position: fixed;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: var(--ink);
+        color: var(--paper);
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-size: 12px;
+        z-index: 9999;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.3s;
+      }
+      /* the toast itself ignores clicks (pointer-events:none, so it never
+         blocks the UI underneath while fading) — but an action link inside
+         it must be clickable, so it opts back in explicitly. */
+      #flashMsg .flash-action {
+        pointer-events: auto;
+        color: var(--accent);
+        font-weight: 600;
+        text-decoration: underline;
+        cursor: pointer;
+        margin-left: 10px;
+      }
+      .ck {
+        appearance: none;
+        width: 15px;
+        height: 15px;
+        border: 1.5px solid var(--faint);
+        border-radius: 4px;
+        cursor: pointer;
+        flex: 0 0 15px;
+        position: relative;
+        margin-top: 1px;
+      }
+      .ck:checked {
+        background: var(--ok);
+        border-color: var(--ok);
+      }
+      .ck:checked::after {
+        content: '✓';
+        color: #fff;
+        font-size: 10px;
+        position: absolute;
+        top: -1px;
+        left: 2px;
+      }
+
+      /* ════════════ PANELS: CARD, NOTE, COMMENTS ════════════ */
+      /* drawer */
+      .scrim {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.28);
+        opacity: 0;
+        pointer-events: none;
+        transition: 0.15s;
+        z-index: 30;
+      }
+      .scrim.open {
+        opacity: 1;
+        pointer-events: auto;
+      }
+      .workflow-modal {
+        position: fixed;
+        inset: 48px;
+        z-index: 33;
+        display: none;
+        flex-direction: column;
+        background: var(--paper);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        box-shadow: var(--shadow);
+        overflow: hidden;
+      }
+      .workflow-modal.open {
+        display: flex;
+      }
+      .workflow-modal header {
+        min-height: 46px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 0 16px;
+        border-bottom: 1px solid var(--line);
+      }
+      .workflow-modal h2 {
+        margin: 0;
+        font-size: 14px;
+        font-weight: 700;
+      }
+      .workflow-map {
+        flex: 1;
+        overflow: auto;
+        padding: 16px;
+      }
+      .workflow-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+        gap: 10px;
+      }
+      .workflow-node {
+        border: 1px solid var(--line);
+        border-left: 4px solid var(--faint);
+        border-radius: 8px;
+        background: var(--card);
+        padding: 10px;
+      }
+      .workflow-node.dev { border-left-color: var(--accent); }
+      .workflow-node.qa { border-left-color: var(--warn); }
+      .workflow-node.done { border-left-color: var(--ok); }
+      .workflow-node h3 {
+        margin: 0;
+        font: 700 12px/1.3 var(--mono);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      .workflow-role {
+        margin-top: 4px;
+        color: var(--muted);
+        font: 600 11px/1.3 var(--mono);
+      }
+      .workflow-gate {
+        margin-top: 8px;
+        color: var(--ink);
+        font-size: 12px;
+      }
+      .workflow-exits {
+        margin-top: 8px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+      }
+      .workflow-edge {
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 3px 7px;
+        color: var(--muted);
+        background: var(--paper);
+        font: 700 10px/1 var(--mono);
+      }
+      @media (max-width: 768px) {
+        .workflow-modal {
+          inset: 46px 0 0;
+          border-radius: 0;
+          border-left: 0;
+          border-right: 0;
+        }
+      }
+      .drawer {
+        position: fixed;
+        top: 0;
+        right: 0;
+        height: 100%;
+        width: 380px;
+        max-width: 92vw;
+        background: var(--paper);
+        border-left: 1px solid var(--line);
+        transform: translateX(100%);
+        transition: transform 0.18s ease;
+        z-index: 32;
+        display: flex;
+        flex-direction: column;
+      }
+      .drawer.open {
+        transform: none;
+      }
+      /* separate note-content panel — to the left of the metadata card */
+      .note-panel {
+        position: fixed;
+        top: 0;
+        right: 380px;
+        height: 100%;
+        width: min(960px, calc(100vw - 400px));
+        background: var(--paper);
+        border-left: 1px solid var(--line);
+        box-shadow: var(--shadow);
+        transform: translateX(calc(100% + 400px));
+        transition: transform 0.18s ease;
+        z-index: 31;
+        display: flex;
+        flex-direction: row;
+      }
+      .note-panel.open {
+        transform: none;
+      }
+      /* left-hand comments column */
+      .comments-col {
+        width: 340px;
+        flex: 0 0 340px;
+        border-right: 1px solid var(--line);
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+      }
+      .comments-head {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-height: 44px;
+        padding: 0 18px;
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--ink);
+        border-bottom: 1px solid var(--line);
+      }
+      .comments-head h2 { font-size: 14px; font-weight: 700; margin: 0; flex: 1; color: var(--ink); }
+      .comments-count {
+        flex: 0 0 auto;
+        min-width: 24px;
+        height: 22px;
+        padding: 0 7px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: var(--card);
+        color: var(--muted);
+        font: 700 11px/20px var(--mono);
+        text-align: center;
+      }
+      .comments-list {
+        flex: 1;
+        overflow-y: auto;
+        padding: 10px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .comment {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        padding: 8px 10px;
+        font-size: 12.5px;
+      }
+      .comment.warn {
+        border-color: var(--accent);
+        background: var(--accent-soft);
+      }
+      .comment-meta {
+        font: 600 10px/1 var(--mono);
+        color: var(--muted);
+        margin-bottom: 5px;
+        word-break: break-word;
+      }
+      .comment.warn .comment-meta {
+        color: var(--accent);
+      }
+      .comment-text {
+        color: var(--ink);
+        line-height: 1.45;
+        word-break: break-word;
+        white-space: pre-wrap;
+      }
+      .no-comments {
+        color: var(--faint);
+        font-size: 12px;
+        padding: 4px 0;
+      }
+      .comment-edit-ta {
+        font-family: var(--sans);
+        font-size: 12.5px;
+        resize: vertical;
+        min-height: 60px;
+        padding: 7px 9px;
+        border: 1px solid var(--accent);
+        border-radius: 7px;
+        background: var(--card);
+        color: var(--ink);
+        width: 100%;
+      }
+      .comment-edit-ta:focus {
+        outline: none;
+      }
+      .comment-edit-actions {
+        display: flex;
+        gap: 6px;
+        margin-top: 6px;
+        justify-content: flex-end;
+      }
+      .comment-edit-actions button {
+        padding: 4px 10px;
+        font-size: 11.5px;
+      }
+      .comment-img {
+        max-width: 100%;
+        max-height: 240px;
+        border-radius: 6px;
+        display: block;
+        margin-top: 4px;
+        cursor: pointer;
+      }
+      .comments-input {
+        padding: 10px 12px 6px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .comments-input textarea {
+        font-family: var(--sans);
+        font-size: 12.5px;
+        resize: vertical;
+        min-height: 52px;
+        padding: 7px 9px;
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        background: var(--card);
+        color: var(--ink);
+        width: 100%;
+      }
+      .comments-input textarea:focus {
+        outline: none;
+        border-color: var(--accent);
+      }
+      .comments-footer {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border-bottom: 1px solid var(--line);
+      }
+      .comments-footer button {
+        margin-left: auto;
+      }
+      .warn-toggle {
+        gap: 7px;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .warn-toggle.active {
+        color: var(--accent);
+        font-weight: 600;
+      }
+      /* right-hand note column */
+      .note-col {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+      }
+      .note-col header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-height: 44px;
+        padding: 0 18px;
+        border-bottom: 1px solid var(--line);
+      }
+      .note-col header h2 {
+        font-size: 14px;
+        margin: 0;
+        font-weight: 700;
+        flex: 1;
+      }
+      /* prominent nav/close buttons for panels */
+      .nav-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 30px;
+        height: 30px;
+        padding: 0;
+        flex: 0 0 30px;
+        font-size: 15px;
+        line-height: 1;
+      }
+      .nav-btn:hover {
+        color: var(--accent);
+        background: var(--accent-soft);
+      }
+      #btnBack:disabled {
+        opacity: 0.35;
+        cursor: default;
+        pointer-events: none;
+      }
+      .np-body {
+        flex: 1;
+        overflow: auto;
+        padding: 20px 22px;
+      }
+      @media (max-width: 1000px) {
+        .comments-col {
+          width: 280px;
+          flex: 0 0 280px;
+        }
+      }
+      @media (max-width: 780px) {
+        .comments-col {
+          display: none;
+        }
+      }
+      .mtabs {
+        display: none;
+      }
+      @media (max-width: 768px) {
+        /* dvh: real iOS Safari viewport height (excludes the address-bar area) */
+        body {
+          height: 100dvh;
+        }
+        aside:not(.drawer):not(.note-panel) {
+          display: none;
+        } /* only the side panel */
+        .columns {
+          scroll-snap-type: x mandatory;
+          -webkit-overflow-scrolling: touch;
+          gap: 8px;
+          padding: 10px 10px;
+        }
+        .col {
+          scroll-snap-align: start;
+          flex: 0 0 calc(100vw - 24px);
+        }
+        /* header: single row; title and search shrink, buttons stay fixed → no overflow */
+        .topbar {
+          flex-wrap: nowrap;
+          padding: 8px 10px;
+          gap: 6px;
+        }
+        .topbar h1 {
+          font-size: 14px;
+          flex: 1 1 auto;
+          min-width: 0;
+          max-width: none;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .topbar .spacer {
+          display: none;
+        }
+        .view-menu,
+        .topbar .file,
+        .topbar .dirty {
+          display: none;
+        }
+        .search {
+          flex: 1 1 70px;
+          min-width: 0;
+          max-width: 130px;
+          width: auto;
+        }
+        .nav-btn {
+          width: 44px;
+          height: 44px;
+          font-size: 18px;
+          flex: 0 0 44px;
+        }
+        /* mobile tab bar */
+        body.panels-open .mtabs {
+          display: flex;
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 46px;
+          z-index: 40;
+          background: var(--paper);
+          border-bottom: 1px solid var(--line);
+        }
+        .mtabs .tab-btn {
+          flex: 1;
+          border: none;
+          border-radius: 0;
+          border-right: 1px solid var(--line);
+          background: var(--paper);
+          color: var(--muted);
+          font: 600 12px/1 var(--sans);
+          padding: 0;
+          height: 46px;
+        }
+        .mtabs .tab-btn:last-child {
+          border-right: none;
+          flex: 0 0 46px;
+          font-size: 15px;
+        }
+        .mtabs .tab-btn:hover {
+          color: var(--accent);
+          background: var(--accent-soft);
+        }
+        .mtabs .tab-btn.active {
+          color: var(--accent);
+          background: var(--accent-soft);
+        }
+        .mtabs .tab-btn.hidden {
+          display: none;
+        }
+        /* on mobile panels are full-screen under the tabs; no scrim needed */
+        .scrim {
+          display: none;
+        }
+        .drawer,
+        .note-panel {
+          display: none;
+          top: 46px;
+          height: calc(100dvh - 46px);
+          width: 100%;
+          max-width: 100%;
+          right: 0;
+          transform: none;
+          border-left: none;
+          box-shadow: none;
+        }
+        .note-panel {
+          flex-direction: column;
+        }
+        /* min-height:0 — so the nested list/body scroll instead of stretching the panel */
+        .comments-col,
+        .note-col {
+          width: 100%;
+          flex: 1 1 100%;
+          border-right: none;
+          min-height: 0;
+        }
+        .np-body,
+        .comments-list,
+        .drawer .body {
+          -webkit-overflow-scrolling: touch;
+        }
+        /* area visibility driven by the active tab */
+        body.mtab-card.panels-open .drawer {
+          display: flex;
+        }
+        body.mtab-note.panels-open .note-panel {
+          display: flex;
+        }
+        body.mtab-note.panels-open .note-panel .note-col {
+          display: flex;
+        }
+        body.mtab-note.panels-open .note-panel .comments-col {
+          display: none;
+        }
+        body.mtab-comments.panels-open .note-panel {
+          display: flex;
+        }
+        body.mtab-comments.panels-open .note-panel .comments-col {
+          display: flex;
+        }
+        body.mtab-comments.panels-open .note-panel .note-col {
+          display: none;
+        }
+      }
+      .drawer header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-height: 44px;
+        padding: 0 18px;
+        border-bottom: 1px solid var(--line);
+      }
+      .drawer header h2 {
+        font-size: 14px;
+        margin: 0;
+        font-weight: 700;
+      }
+      .drawer .body {
+        flex: 1;
+        overflow: auto;
+        padding: 16px 18px;
+      }
+      .field {
+        margin-bottom: 14px;
+      }
+      .field label {
+        display: block;
+        font: 600 10px/1 var(--mono);
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--faint);
+        margin-bottom: 5px;
+      }
+      /* ════════════ EDITOR FORM: FIELDS, DATEPICKER, ARTIFACTS ════════════ */
+      /* reset .field label for toggles inside the grid */
+      label.switch {
+        display: inline-flex;
+        font: inherit;
+        letter-spacing: 0;
+        text-transform: none;
+        color: var(--ink);
+        margin-bottom: 0;
+      }
+      .field input,
+      .field select,
+      .field textarea {
+        width: 100%;
+        font-family: var(--sans);
+        font-size: 13px;
+        padding: 8px 10px;
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        background: var(--card);
+        color: var(--ink);
+      }
+      .field textarea {
+        min-height: 42px;
+        line-height: 1.35;
+        resize: vertical;
+      }
+      .field select {
+        appearance: none;
+        background:
+          linear-gradient(45deg, transparent 50%, var(--faint) 50%) calc(100% - 15px) 50% / 5px 5px no-repeat,
+          linear-gradient(135deg, var(--faint) 50%, transparent 50%) calc(100% - 10px) 50% / 5px 5px no-repeat,
+          var(--card);
+        padding-right: 30px;
+      }
+      .field select:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 2px var(--accent-soft);
+      }
+      .field input[type='date'] {
+        font-family: var(--mono);
+        font-size: 12px;
+      }
+      /* datepicker layered over the text input */
+      .date-wrap { position: relative; }
+      .date-wrap .date-disp { pointer-events: none; width: 100%; box-sizing: border-box; }
+      .date-wrap input[type='date'] {
+        position: absolute; inset: 0; opacity: 0;
+        width: 100%; height: 100%; cursor: pointer;
+        box-sizing: border-box; padding: 0;
+      }
+      .date-wrap input[type='date']::-webkit-calendar-picker-indicator {
+        position: absolute; inset: 0; width: 100%; height: 100%;
+        opacity: 0; cursor: pointer;
+      }
+      .grid2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      .rel {
+        margin-top: 8px;
+      }
+      .rel h3 {
+        font: 600 10px/1 var(--mono);
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--faint);
+        margin: 14px 0 7px;
+      }
+      .rel .empty {
+        color: var(--faint);
+        font-size: 12px;
+      }
+      .md {
+        font-size: 12.5px;
+        line-height: 1.5;
+        color: var(--ink);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 10px 12px;
+        background: var(--card);
+      }
+      .md h4 {
+        font: 600 10px/1 var(--mono);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin: 11px 0 5px;
+      }
+      .md h4:first-child {
+        margin-top: 0;
+      }
+      .md p {
+        margin: 5px 0;
+        color: var(--muted);
+      }
+      .md .md-list {
+        counter-reset: olc;
+      }
+      .md .md-li {
+        padding: 2px 0 2px 16px;
+        position: relative;
+        color: var(--muted);
+      }
+      .md .md-li::before {
+        content: '•';
+        position: absolute;
+        left: 3px;
+        color: var(--faint);
+      }
+      .md .md-li.ol {
+        counter-increment: olc;
+        padding-left: 22px;
+      }
+      .md .md-li.ol::before {
+        content: counter(olc) '.';
+        position: absolute;
+        left: 2px;
+        color: var(--faint);
+      }
+      .md .md-ck {
+        padding: 3px 0 3px 22px;
+        position: relative;
+        color: var(--muted);
+      }
+      .md .md-ck::before {
+        content: '☐';
+        position: absolute;
+        left: 2px;
+        color: var(--faint);
+      }
+      .md .md-ck.on {
+        color: var(--ink);
+      }
+      .md .md-ck.on::before {
+        content: '☑';
+        color: var(--ok);
+      }
+      .md code {
+        font-family: var(--mono);
+        font-size: 11.5px;
+        background: var(--paper);
+        padding: 1px 4px;
+        border-radius: 3px;
+      }
+      .md pre {
+        background: var(--paper);
+        border: 1px solid var(--line);
+        border-radius: 4px;
+        padding: 0.55em 0.8em;
+        overflow-x: auto;
+        margin: 0.4em 0;
+      }
+      .md pre code {
+        font-family: var(--mono);
+        font-size: 11.5px;
+        background: none;
+        padding: 0;
+        border-radius: 0;
+        white-space: pre;
+      }
+      .md a {
+        color: var(--accent);
+        text-decoration: none;
+        border-bottom: 1px solid var(--accent-soft);
+        word-break: break-word;
+      }
+      .md a:hover {
+        border-bottom-color: var(--accent);
+      }
+      .md b {
+        color: var(--ink);
+      }
+      .md i {
+        font-style: italic;
+      }
+      .md blockquote {
+        border-left: 3px solid var(--line);
+        margin: 8px 0;
+        padding: 3px 0 3px 12px;
+        color: var(--muted);
+      }
+      .md hr {
+        border: none;
+        border-top: 1px solid var(--line);
+        margin: 12px 0;
+      }
+      .md .md-img {
+        color: var(--muted);
+        font-style: italic;
+      }
+      .md table {
+        border-collapse: collapse;
+        width: 100%;
+        margin: 9px 0;
+        font-size: 12px;
+        display: block;
+        overflow-x: auto;
+      }
+      .md th,
+      .md td {
+        border: 1px solid var(--line);
+        padding: 5px 9px;
+        text-align: left;
+        vertical-align: top;
+      }
+      .md th {
+        background: var(--card);
+        font-weight: 600;
+        color: var(--ink);
+      }
+      .md .wl {
+        font-size: 11px;
+      }
+      /* artifact metadata */
+      .art-meta {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 6px;
+        padding: 0 0 10px;
+        border-bottom: 1px solid var(--line);
+        margin-bottom: 12px;
+      }
+      .art-tag {
+        font: 600 9.5px/1 var(--mono);
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+        color: var(--muted);
+        background: var(--paper);
+        border: 1px solid var(--line);
+        border-radius: 4px;
+        padding: 2px 6px;
+      }
+      .art-status {
+        font: 700 9.5px/1 var(--mono);
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+        color: var(--warn);
+        background: var(--card);
+        border: 1px solid var(--warn);
+        border-radius: 4px;
+        padding: 2px 6px;
+      }
+      .art-status.ok {
+        color: var(--ok);
+        border-color: var(--ok);
+      }
+      .art-linked {
+        font-size: 12.5px;
+        color: var(--muted);
+        padding: 7px 0 10px;
+        border-bottom: 1px solid var(--line);
+        margin-bottom: 12px;
+      }
+      /* larger, more readable variant in the content panel */
+      .note-owner {
+        font-size: 12px;
+        color: var(--muted);
+        padding: 0 0 10px;
+        border-bottom: 1px solid var(--line);
+        margin-bottom: 12px;
+      }
+      .np-body .md {
+        border: none;
+        border-radius: 0;
+        padding: 0;
+        background: transparent;
+        font-size: 14px;
+        line-height: 1.65;
+      }
+      .np-body .md p {
+        color: var(--ink);
+        margin: 8px 0;
+      }
+      .np-body .md h4 {
+        font-size: 11.5px;
+        margin: 18px 0 8px;
+      }
+      .np-body .md .md-li,
+      .np-body .md .md-ck {
+        color: var(--ink);
+        padding-top: 3px;
+        padding-bottom: 3px;
+      }
+      .np-body .md code {
+        font-size: 12.5px;
+      }
+      .np-body .md table {
+        font-size: 13px;
+      }
+      .np-body .md .wl {
+        font-size: 13px;
+      }
+      .drawer footer {
+        display: flex;
+        gap: 8px;
+        padding: 10px 18px;
+        border-top: 1px solid var(--line);
+      }
+      .drawer footer .del {
+        margin-right: auto;
+      } /* layout: push "Delete" to the left; color comes from the .danger class */
+
+      .empty-state {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 14px;
+        color: var(--muted);
+        text-align: center;
+        padding: 40px;
+      }
+      .empty-state .big {
+        font-size: 15px;
+        color: var(--ink);
+        font-weight: 600;
+      }
+      .legend {
+        font: 500 11px/1.6 var(--mono);
+        color: var(--faint);
+        max-width: 420px;
+      }
+      .hidden {
+        display: none !important;
+      }
+      #liveTs {
+        display: block;
+        font-size: 10px;
+        color: var(--faint);
+        margin-top: 6px;
+        white-space: nowrap;
+      }
+      .dir-name {
+        display: block;
+        font-size: 11px;
+        color: var(--faint);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      /* ════════════ COMPONENTS: TAG PICKER, SCROLLBAR ════════════ */
+      /* tag picker */
+      .tag-picker { position: relative; }
+      .tag-select {
+        display: flex; align-items: center; gap: 6px;
+        width: 100%; box-sizing: border-box; overflow: hidden;
+        border: 1px solid var(--line); border-radius: 7px; padding: 8px 10px;
+        cursor: pointer; user-select: none;
+        font-family: var(--sans); font-size: 13px; color: var(--ink); background: var(--card);
+      }
+      .tag-select:focus { outline: none; border-color: var(--accent); }
+      .tag-select-val { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .tag-select-val.ph { color: var(--faint); }
+      .tag-select-arrow { color: var(--faint); font-size: 10px; flex-shrink: 0; }
+      .tag-drop {
+        position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 200;
+        background: var(--paper); border: 1px solid var(--line); border-radius: 7px;
+        box-shadow: var(--shadow); max-height: 220px; display: none; flex-direction: column;
+        overflow: hidden;
+      }
+      .tag-drop.open { display: flex; }
+      .tag-drop-search {
+        padding: 7px 10px; border-bottom: 1px solid var(--line); flex-shrink: 0;
+        background: var(--card);
+      }
+      .tag-drop-search input {
+        width: 100%; border: none; outline: none; background: transparent;
+        font: 500 12px/1.4 var(--mono); color: var(--ink);
+      }
+      .tag-drop-list { overflow-y: auto; flex: 1; }
+      .tag-drop-item {
+        display: flex; align-items: center; gap: 8px;
+        padding: 7px 10px; cursor: pointer;
+        font: 500 12px/1.4 var(--mono); color: var(--ink);
+      }
+      .tag-drop-item .chk { width: 14px; flex-shrink: 0; color: var(--accent); font-size: 12px; }
+      .tag-drop-item.sel { color: var(--accent); }
+
+      /* custom scrollbar — matches dashboard palette */
+      ::-webkit-scrollbar { width: 6px; height: 6px; }
+      ::-webkit-scrollbar-track { background: var(--line); border-radius: 3px; }
+      ::-webkit-scrollbar-thumb { background: var(--faint); border-radius: 3px; }
+      ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+      ::-webkit-scrollbar-corner { background: var(--line); }
+      * { scrollbar-width: thin; scrollbar-color: var(--faint) var(--line); }
+    </style>
+  </head>
+  <body>
+    <aside>
+      <div class="brand">Kanban<small>obsidian-compatible</small></div>
+      <div class="side-h">Boards</div>
+      <div class="boards" id="boards"></div>
+      <div class="side-foot">
+        <button id="btnAddTask" class="ghost hidden" title="Add task to BACKLOG">+ Task</button>
+        <button id="newBoard" class="ghost">+ Board</button>
+        <button id="openDir" class="ghost">◲ Open tasks/ folder</button>
+        <span id="dirName" class="dir-name"></span>
+        <span id="liveTs"></span>
+      </div>
+    </aside>
+
+    <main>
+      <div class="topbar">
+        <h1 id="boardTitle">No board open</h1>
+        <span class="file" id="boardFile"></span>
+        <span class="spacer"></span>
+        <button id="theme" class="ghost">◑ Theme</button>
+        <div class="view-menu">
+          <button
+            id="viewTrigger"
+            class="ghost"
+            title="Configure card display"
+          >
+            ⊙ View
+          </button>
+          <div class="view-pop hidden" id="viewPop"></div>
+        </div>
+        <button id="workflowTrigger" class="ghost" title="Workflow transitions and gates">↔ Workflow</button>
+        <button id="boardArtifactsTrigger" class="ghost" title="Unique artifacts in the active board">▷ Artifacts 0</button>
+        <div class="search-wrap">
+          <input class="search" id="search" placeholder="Filter" autocomplete="off" />
+          <div class="filter-drop" id="filterDrop">
+            <div class="filter-drop-group" id="filterPriorityGroup">
+              <div class="filter-drop-label">Priority</div>
+              <button class="filter-preset" data-filter="🟥">● High</button>
+              <button class="filter-preset" data-filter="🟨">◐ Medium</button>
+              <button class="filter-preset" data-filter="🟩">○ Low</button>
+            </div>
+            <div class="filter-drop-group hidden" id="filterArtifactGroup">
+              <div class="filter-drop-label">Artifacts</div>
+              <button class="filter-preset active" data-artifact-page-filter="all">All</button>
+              <button class="filter-preset" data-artifact-page-filter="openable">Readable</button>
+              <button class="filter-preset" data-artifact-page-filter="missing">Other</button>
+            </div>
+            <div class="filter-drop-group" id="filterTagGroup"></div>
+          </div>
+        </div>
+        <span class="filter-chip" id="artifactFilterChip"></span>
+        <span class="dirty hidden" id="dirty">● unsaved</span>
+      </div>
+      <div class="columns hidden" id="columns"></div>
+      <section class="artifact-page hidden" id="artifactPage"></section>
+      <div class="empty-state" id="empty">
+        <div class="big">
+          Open the <code>tasks/</code> folder or individual board files
+        </div>
+        <div class="legend">
+          Dashboard reads and writes the same format as the Obsidian Kanban plugin:<br />
+          11 columns · cards <code>- [ ] [[slug|TYPE: Title]]</code> · tags
+          ➕ created · 🛫 start · 📅 deadline · ⏳ estimate · 🟥/🟨/🟩 priority ·
+          🔁 recurring.<br /><br />
+          "Open folder" (Chrome/Edge) grants read access to all boards and specs + auto-save.
+        </div>
+      </div>
+    </main>
+
+    <div class="scrim" id="scrim"></div>
+    <section class="workflow-modal" id="workflowModal" aria-modal="true" aria-labelledby="workflowTitle">
+      <header>
+        <h2 id="workflowTitle">Workflow map</h2>
+        <span class="spacer"></span>
+        <button class="nav-btn" id="workflowClose" title="Close">✕</button>
+      </header>
+      <div class="workflow-map" id="workflowMap"></div>
+    </section>
+    <div class="mtabs" id="mtabs">
+      <button class="tab-btn" data-mtab="note">Note</button>
+      <button class="tab-btn" data-mtab="comments">Comments</button>
+      <button class="tab-btn" data-mtab="card">Card</button>
+      <button id="mClose" class="nav-btn" title="Close">✕</button>
+    </div>
+    <aside class="note-panel" id="notePanel">
+      <div class="comments-col">
+        <header class="comments-head">
+          <h2>Comments</h2>
+          <span class="comments-count" id="commentsCount">0</span>
+        </header>
+        <div class="comments-input">
+          <textarea id="commentText" placeholder="Your comment…"></textarea>
+        </div>
+        <div class="comments-footer">
+          <label class="switch warn-toggle" id="warnToggleLabel">
+            <input type="checkbox" id="warnToggle" /><span class="track"></span
+            >◬ ATTENTION
+          </label>
+          <button id="commentSubmit" class="primary">Add</button>
+        </div>
+        <div class="comments-list" id="commentsList"></div>
+      </div>
+      <div class="note-col">
+        <header>
+          <button class="nav-btn" id="btnBack" disabled title="Back">←</button>
+          <h2>Note content</h2>
+        </header>
+        <div class="np-body" id="note"></div>
+      </div>
+    </aside>
+    <aside class="drawer" id="drawer">
+      <header>
+        <h2 id="drawerTitle">Card</h2>
+        <span class="spacer"></span>
+        <button class="nav-btn" id="drawerClose" title="Close">✕</button>
+      </header>
+      <div class="body" id="drawerBody"></div>
+      <footer>
+        <button class="del danger" id="cardDelete">Delete</button>
+        <button id="cardCancel">Cancel</button>
+        <button class="primary" id="cardSave">Apply</button>
+      </footer>
+    </aside>
+
+    <script>
+      /* ════════════ FORMAT CORE ════════════ */
+      const COLUMNS = [
+        'BACKLOG',
+        'ICEBOX',
+        'TODO',
+        'IN PROGRESS',
+        'BLOCKED',
+        'TESTING',
+        'IN REVIEW',
+        'UAT',
+        'REJECTED',
+        'REWORK',
+        'DONE',
+      ];
+      const COL_STATUS = {
+        BACKLOG: 'backlog',
+        ICEBOX: 'icebox',
+        TODO: 'ready',
+        'IN PROGRESS': 'in-progress',
+        BLOCKED: 'blocked',
+        TESTING: 'testing',
+        'IN REVIEW': 'review',
+        UAT: 'uat',
+        REJECTED: 'rejected',
+        REWORK: 'rework',
+        DONE: 'done',
+      };
+      const RE_HEADER = /^##\s+(.+?)\s*$/,
+        RE_CARD = /^\s*- \[( |x)\] (.*)$/,
+        RE_LINK = /\[\[([^\]|]+)(?:\|([^\]]*))?\]\]/,
+        RE_DATE = /(\d{4}-\d{2}-\d{2})/,
+        RE_LINK_G = /\[\[([^\]|]+)(?:\|[^\]]*)?\]\]/g;
+
+      /* ════════════ CONFIG — tunable constants ════════════ */
+      const LIVE_INTERVAL_MS = 3000;   // live-reload interval (ms)
+      const ITEM_ICON = { epic: '◉', task: '▣', subtask: '◻' };
+      const ITEM_LABEL = { epic: 'Epic', task: 'Task', subtask: 'Subtask' };
+      const VIEW_OPTIONS = [
+        { key: 'showEmptyColumns', label: '▥ Show empty columns', group: 'Display' },
+        { key: 'showItemType', label: '▣ Task type', group: 'Metadata' },
+        { key: 'showTags', label: '⌗ Tags', group: 'Metadata' },
+        { key: 'showDue', label: '⬦ Deadline', group: 'Metadata' },
+        { key: 'showStart', label: '→ Start', group: 'Metadata' },
+        { key: 'showEstimate', label: '~ Estimate', group: 'Metadata' },
+        { key: 'showPriority', label: '● Priority', group: 'Metadata' },
+        { key: 'showRecurring', label: '↺ Recurring', group: 'Metadata' },
+        { key: 'showOwner', label: '@ Owner', group: 'Metadata' },
+        { key: 'showStatus', label: '◈ Status', group: 'Metadata' },
+        { key: 'showDone', label: '✓ Done', group: 'Metadata' },
+        { key: 'showDesc', label: '≡ Description', group: 'Content' },
+        { key: 'showDod', label: '◫ DoD Progress', group: 'Content' },
+        { key: 'showDeps', label: '△ Dependencies', group: 'Content' },
+      ];
+      const WORKFLOW_STAGES = [
+        { col: 'BACKLOG', role: 'analyst', gate: 'Scope, itemType, DoD and test checklist are concrete; startedAt is set when analysis starts.', exits: ['TODO', 'ICEBOX'] },
+        { col: 'ICEBOX', role: 'archivist', gate: 'Freeze reason is recorded.', exits: ['BACKLOG'] },
+        { col: 'TODO', role: 'planner', gate: 'Dependencies done, estimate set, planner comment recorded.', exits: ['IN PROGRESS', 'BACKLOG'], tone: 'dev' },
+        { col: 'IN PROGRESS', role: 'developer / researcher', gate: 'Artifact exists, DoD progress recorded, scoped check passes.', exits: ['TESTING', 'IN REVIEW', 'BLOCKED'], tone: 'dev' },
+        { col: 'BLOCKED', role: 'communicator', gate: 'Blocker and needed decision are explicit.', exits: ['IN PROGRESS', 'REWORK', 'ICEBOX'] },
+        { col: 'TESTING', role: 'tester', gate: 'Test checklist is run factually; browser leftovers are marked for UAT.', exits: ['IN REVIEW', 'IN PROGRESS'], tone: 'qa' },
+        { col: 'IN REVIEW', role: 'reviewer', gate: 'Review checklist is complete; scoped check passes.', exits: ['DONE', 'UAT', 'REJECTED'], tone: 'qa' },
+        { col: 'UAT', role: 'user', gate: 'Manual acceptance or rejection.', exits: ['DONE', 'REJECTED'], tone: 'done' },
+        { col: 'REJECTED', role: 'debugger', gate: 'Root cause and fix plan are recorded with attention.', exits: ['REWORK'] },
+        { col: 'REWORK', role: 'developer', gate: 'Fix completed and regression covered.', exits: ['TESTING', 'IN REVIEW', 'BLOCKED'], tone: 'dev' },
+        { col: 'DONE', role: 'documenter', gate: 'Terminal state; closing comment records result and follow-ups.', exits: [], tone: 'done' },
+      ];
+
+      /* ════════════ BOARD & SPEC PARSING ════════════ */
+      function parseBoard(md) {
+        const lines = md.replace(/\r\n/g, '\n').split('\n');
+        const columns = COLUMNS.map((name) => ({ name, cards: [] }));
+        const byName = Object.fromEntries(columns.map((c) => [c.name, c]));
+        let cur = null;
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i],
+            h = line.match(RE_HEADER);
+          if (h && byName[h[1].trim()]) {
+            cur = byName[h[1].trim()];
+            continue;
+          }
+          // %% kanban — start of the plugin settings block: no cards follow, stop parsing
+          if (line.startsWith('%% kanban')) break;
+          const c = line.match(RE_CARD);
+          if (cur && c) {
+            const checked = c[1] === 'x',
+              link = c[2].match(RE_LINK);
+            const slug = link ? link[1].trim() : c[2].trim();
+            const name =
+              link && link[2] ? link[2].trim() : link ? slug : c[2].trim();
+            const card = { checked, slug, name, tags: {} };
+            const nxt = lines[i + 1] || '';
+            if (/[➕🛫📅⏳🔼🔽🔁]/.test(nxt)) {
+              parseTags(nxt, card.tags);
+              i++;
+            }
+            cur.cards.push(card);
+          }
+        }
+        return { columns };
+      }
+      function parseTags(line, tags) {
+        const grab = (e) => {
+          const i = line.indexOf(e);
+          if (i < 0) return null;
+          return (
+            line
+              .slice(i + e.length)
+              .trimStart()
+              .split(/\s+/)[0] || null
+          );
+        };
+        // ➕ can hold a date+time "YYYY-MM-DD HH:MM:SS" — capture both tokens
+        const grabDT = (e) => {
+          const i = line.indexOf(e);
+          if (i < 0) return null;
+          const rest = line.slice(i + e.length).trimStart();
+          const m = rest.match(/^(\d{4}-\d{2}-\d{2}(?:\s+\d{2}:\d{2}:\d{2})?)/);
+          return m ? m[1] : null;
+        };
+        const cr = grabDT('➕');
+        if (cr && RE_DATE.test(cr)) tags.created = cr;
+        const st = grab('🛫');
+        if (st && RE_DATE.test(st)) tags.start = st;
+        const du = grab('📅');
+        if (du && RE_DATE.test(du)) tags.due = du;
+        const es = grab('⏳');
+        if (es) tags.estimate = es;
+        if (line.includes('🟥')) tags.priority = 'high';
+        if (line.includes('🟨')) tags.priority = 'medium';
+        if (line.includes('🟩')) tags.priority = 'low';
+        if (line.includes('🔁')) tags.recurring = true;
+        const dnI = line.indexOf('✅');
+        if (dnI >= 0) {
+          const dnRaw = line.slice(dnI + '✅'.length).trimStart();
+          const dnM = dnRaw.match(/^(\d{4}-\d{2}-\d{2}(?:\s+\d{2}:\d{2})?)/);
+          if (dnM) tags.done = dnM[1];
+        }
+      }
+      function buildTagLine(t) {
+        const p = [];
+        if (t.created) p.push('➕ ' + t.created);
+        if (t.start) p.push('🛫 ' + t.start);
+        if (t.due) p.push('📅 ' + t.due);
+        if (t.estimate) p.push('⏳ ' + t.estimate);
+        if (t.priority === 'high') p.push('🟥');
+        if (t.priority === 'medium') p.push('🟨');
+        if (t.priority === 'low') p.push('🟩');
+        if (t.recurring) p.push('🔁');
+        if (t.done) p.push('✅ ' + t.done);
+        return p.length ? '\t' + p.join(' ') : null;
+      }
+      function sortDoneCards(cards) {
+        return cards.sort((a, b) => (b.tags.done || '').localeCompare(a.tags.done || ''));
+      }
+      function serializeBoard(board) {
+        let out = '---\n\nkanban-plugin: board\n\n---\n';
+        for (const col of board.columns) {
+          out += '\n## ' + col.name + '\n';
+          if (!col.cards.length) {
+            out += '\n';
+            continue;
+          }
+          for (const card of col.cards) {
+            out +=
+              '\n- [' +
+              (card.checked ? 'x' : ' ') +
+              '] [[' +
+              card.slug +
+              '|' +
+              cardDisplayName(card) +
+              ']]\n';
+            const tl = buildTagLine(card.tags);
+            if (tl) out += tl + '\n';
+          }
+          out += '\n';
+        }
+        out +=
+          '\n%% kanban:settings\n{"kanban-plugin":"board","list-collapse":' +
+          JSON.stringify(COLUMNS.map(() => false)) +
+          '}\n%%\n';
+        return out;
+      }
+      function uniqueLinks(links) {
+        return [...new Set((links || []).map((s) => String(s).trim()).filter(Boolean))];
+      }
+      function wikilinksIn(text) {
+        const links = [];
+        let match;
+        RE_LINK_G.lastIndex = 0;
+        while ((match = RE_LINK_G.exec(text || ''))) links.push(match[1].trim());
+        return links;
+      }
+      function frontmatterLinks(value) {
+        const source = String(value || '').trim();
+        if (!source.startsWith('[') || !source.endsWith(']')) return [];
+        return source
+          .slice(1, -1)
+          .split(',')
+          .map((item) => item.trim().replace(/^(['"])(.*)\1$/, '$2'))
+          .map((item) => wikilinksIn(item)[0] || item)
+          .filter(Boolean);
+      }
+      function structuredLinks(spec) {
+        if (!spec) return [];
+        return uniqueLinks([...blockingLinks(spec), ...(spec.related || [])]);
+      }
+      function blockingLinks(spec) {
+        if (!spec) return [];
+        return uniqueLinks([...(spec.deps || []), ...(spec.blocks || [])]);
+      }
+      function finalizeSpecLinks(spec) {
+        spec.deps = uniqueLinks(spec.deps);
+        spec.blocks = uniqueLinks(spec.blocks);
+        spec.related = uniqueLinks(spec.related);
+        spec.links = uniqueLinks(spec.links);
+        const structured = new Set(structuredLinks(spec));
+        spec.mentions = spec.links.filter((slug) => !structured.has(slug));
+        return spec;
+      }
+
+      /* spec: normalize task relationships at the file boundary, then patch status/timestamps */
+      function parseSpec(md) {
+        md = md.replace(/\r\n/g, '\n').replace(/\r/g, '\n'); // normalize CRLF/CR → LF
+        const out = {
+          status: null,
+          deps: [],
+          blocks: [],
+          related: [],
+          mentions: [],
+          links: [],
+          desc: '',
+          dod: { done: 0, total: 0 },
+        };
+        if (md.startsWith('---')) {
+          const end = md.indexOf('\n---', 3);
+          if (end > -1) {
+            md.slice(3, end)
+              .split('\n')
+              .forEach((l) => {
+                let m;
+                if ((m = l.match(/^status:\s*(.+)$/))) out.status = m[1].trim();
+                if ((m = l.match(/^dependsOn:\s*(.+)$/)))
+                  out.deps.push(...frontmatterLinks(m[1]));
+                if ((m = l.match(/^blocks:\s*(.+)$/)))
+                  out.blocks.push(...frontmatterLinks(m[1]));
+                if ((m = l.match(/^priority:\s*(.+)$/)))
+                  out.priority = m[1].trim().toLowerCase();
+                if ((m = l.match(/^estimate:\s*(.+)$/)))
+                  out.estimate = m[1].trim();
+                if ((m = l.match(/^due:\s*(.+)$/))) out.due = m[1].trim();
+                if ((m = l.match(/^start:\s*(.+)$/))) out.start = m[1].trim();
+                if ((m = l.match(/^createdAt:\s*(.+)$/)))
+                  out.createdAt = m[1].trim();
+                if ((m = l.match(/^updatedAt:\s*(.+)$/)))
+                  out.updatedAt = m[1].trim();
+                if ((m = l.match(/^startedAt:\s*(.+)$/)))
+                  out.startedAt = m[1].trim();
+                if ((m = l.match(/^testingAt:\s*(.+)$/)))
+                  out.testingAt = m[1].trim();
+                if ((m = l.match(/^reviewAt:\s*(.+)$/)))
+                  out.reviewAt = m[1].trim();
+                if ((m = l.match(/^doneAt:\s*(.+)$/)))
+                  out.doneAt = m[1].trim();
+                if ((m = l.match(/^itemType:\s*(.+)$/)))
+                  out.itemType = m[1].trim().toLowerCase();
+                if ((m = l.match(/^owner:\s*(.+)$/))) out.owner = m[1].trim();
+                if ((m = l.match(/^reminder:\s*(.+)$/))) out.reminder = m[1].trim() === 'null' ? null : m[1].trim();
+                if ((m = l.match(/^linkedTask:\s*(.+)$/)))
+                  out.linkedTask = m[1].trim();
+                if ((m = l.match(/^tags:\s*\[(.+)\]$/)))
+                  out.artifactTags = m[1]
+                    .split(',')
+                    .map((t) => t.trim())
+                    .filter(Boolean);
+              });
+            const body = md.slice(end + 4);
+            let sec = '';
+            const descLines = [];
+            body.split('\n').forEach((l) => {
+              if (l.startsWith('## ')) {
+                sec = l.slice(3).trim().toLowerCase();
+                return;
+              }
+              const isDep = sec.includes('зависим') || sec.includes('depend');
+              const lineLinks = wikilinksIn(l);
+              if (isDep && /зависит от|depends/i.test(l)) {
+                out.deps.push(...lineLinks);
+              }
+              if (isDep && /блокир|blocks/i.test(l)) {
+                out.blocks.push(...lineLinks);
+              }
+              const isRelated = sec === 'related' || sec === 'связи' || sec.startsWith('связан');
+              if (isRelated) out.related.push(...lineLinks);
+              if (sec.startsWith('описание') || sec.startsWith('description')) {
+                const t = l.trim();
+                if (t && !t.startsWith('<!--')) descLines.push(t);
+              }
+              if (
+                sec.includes('definition of done') ||
+                sec.startsWith('dod') ||
+                sec.includes('(dod)')
+              ) {
+                const m = l.match(/^\s*- \[( |x)\]/);
+                if (m) {
+                  out.dod.total++;
+                  if (m[1] === 'x') out.dod.done++;
+                }
+              }
+            });
+            out.desc = descLines.join(' ').replace(/\s+/g, ' ').trim();
+            out.body = body;
+            const titleMatch = body.match(/^#\s+(.+)$/m);
+            if (titleMatch) {
+              out.title = titleMatch[1]
+                .replace(/^[^\wА-Яа-я0-9]+/u, '')
+                .trim();
+            }
+            out.links = wikilinksIn(body);
+          }
+        } else {
+          // artifact without frontmatter — treat the whole text as the body (fallback)
+          out.body = md;
+          out.links = wikilinksIn(md);
+        }
+        return finalizeSpecLinks(out);
+      }
+      function patchSpecStatus(md, status, priority, reminder, fromCol, toCol) {
+        const now = localNow();
+        if (!md.startsWith('---')) return md;
+        const end = md.indexOf('\n---', 3);
+        if (end < 0) return md;
+        const fm0 = md.slice(3, end),
+          body0 = md.slice(end + 4);
+        let fm = fm0,
+          body = body0;
+        fm = /^status:/m.test(fm)
+          ? fm.replace(/^status:.*$/m, 'status: ' + status)
+          : fm + '\nstatus: ' + status;
+        if (priority && /^(high|medium|low)$/.test(priority)) {
+          fm = /^priority:/m.test(fm)
+            ? fm.replace(/^priority:.*$/m, 'priority: ' + priority)
+            : fm + '\npriority: ' + priority;
+        }
+        if (typeof reminder !== 'undefined') {
+          const rv = reminder || 'null';
+          fm = /^reminder:/m.test(fm)
+            ? fm.replace(/^reminder:.*$/m, 'reminder: ' + rv)
+            : fm + '\nreminder: ' + rv;
+        }
+        // Auto-fill createdAt when the field is missing or null
+        if (/^createdAt:/m.test(fm)) {
+          fm = fm.replace(/^createdAt:\s*(.*)$/m, (_, v) =>
+            (!v.trim() || v.trim() === 'null') ? 'createdAt: ' + now : 'createdAt: ' + v.trim()
+          );
+        } else {
+          fm += '\ncreatedAt: ' + now;
+        }
+        const lifecycleField = {
+          'in-progress': 'startedAt',
+          testing: 'testingAt',
+          review: 'reviewAt',
+          done: 'doneAt',
+        }[status];
+        if (lifecycleField) {
+          const re = new RegExp('^' + lifecycleField + ':\\s*(.*)$', 'm');
+          const current = fm.match(re);
+          if (current) {
+            const value = current[1].trim();
+            if (!value || value === 'null')
+              fm = fm.replace(re, lifecycleField + ': ' + now);
+          } else {
+            fm += '\n' + lifecycleField + ': ' + now;
+          }
+        }
+        // Append transition to ## Changelog when column changes
+        if (fromCol && toCol && fromCol !== toCol) {
+          const entry = `\n${now} | move | ${fromCol} → ${toCol}`;
+          const clRe = /^## Changelog\s*$/m;
+          if (clRe.test(body)) {
+            body = body.replace(clRe, (m) => m + '\n' + entry);
+          } else {
+            body += '\n## Changelog\n' + entry + '\n';
+          }
+        }
+        // Nothing actually changed -- do not bump updatedAt, return the original untouched
+        if (fm === fm0 && body === body0) return md;
+        fm = /^updatedAt:/m.test(fm)
+          ? fm.replace(/^updatedAt:.*$/m, 'updatedAt: ' + now)
+          : fm + '\nupdatedAt: ' + now;
+        return '---' + fm + '\n---' + body;
+      }
+
+      /* ════════════ STATE ════════════ */
+      const S = {
+        boards: [],
+        specs: new Map(),
+        active: -1,
+        dirHandle: null,
+        projectName: '',
+        projectNameKey: '',
+        filter: '',
+        viewMode: 'board',
+        artifactPageFilter: 'all',
+        editing: null,
+        settings: {
+          showItemType: true,
+          showTags: true,
+          showDue: true,
+          showStart: true,
+          showEstimate: true,
+          showPriority: true,
+          showRecurring: true,
+          showOwner: true,
+          showStatus: true,
+          showDone: true,
+          showDesc: true,
+          showDod: true,
+          showDeps: true,
+          showEmptyColumns: false,
+        },
+        customTypes: [],
+        navHistory: [],
+        navPos: -1,
+        currentNote: null,
+        fileMtime: new Map(), // slug/name → lastModified (for diffing during polling)
+      };
+      // Live-reload: automatic polling while a folder is open
+      let _liveTimer = null;
+      // isolation key: each dashboard keeps its own state per folder
+      const NS = location.pathname;
+      try {
+        const saved = JSON.parse(
+          localStorage.getItem(NS + ':settings') || '{}',
+        );
+        if ('showLinks' in saved && !('showDeps' in saved))
+          saved.showDeps = saved.showLinks; // migrate legacy showLinks→showDeps
+        delete saved.showLinks;
+        if ('hideEmptyColumns' in saved && !('showEmptyColumns' in saved))
+          saved.showEmptyColumns = !saved.hideEmptyColumns; // migrate legacy hide→show
+        delete saved.hideEmptyColumns;
+        Object.assign(S.settings, saved);
+      } catch (e) {}
+      try {
+        S.customTypes = JSON.parse(localStorage.getItem(NS + ':types') || '[]');
+      } catch (e) {}
+      function saveSettings() {
+        try {
+          localStorage.setItem(NS + ':settings', JSON.stringify(S.settings));
+        } catch (e) {}
+      }
+      function saveTypes() {
+        try {
+          localStorage.setItem(NS + ':types', JSON.stringify(S.customTypes));
+        } catch (e) {}
+      }
+      function projectStorageKey(dir) {
+        return NS + ':project-name:' + (dir && dir.name || 'tasks');
+      }
+      function cleanProjectName(value) {
+        return String(value || '').replace(/\s+/g, ' ').trim();
+      }
+      function loadProjectName(dir) {
+        S.projectNameKey = projectStorageKey(dir);
+        let name = '';
+        try {
+          name = cleanProjectName(localStorage.getItem(S.projectNameKey));
+        } catch (e) {}
+        if (!name && dir) {
+          const suggested = cleanProjectName(dir.name) || 'Project';
+          name = cleanProjectName(prompt('Project name for this opened tasks/ folder:', suggested));
+          if (!name) name = suggested;
+          saveProjectName(name);
+        }
+        S.projectName = name;
+        return name;
+      }
+      function saveProjectName(name) {
+        const cleaned = cleanProjectName(name);
+        if (!cleaned) return false;
+        S.projectName = cleaned;
+        if (S.projectNameKey) {
+          try {
+            localStorage.setItem(S.projectNameKey, cleaned);
+          } catch (e) {}
+        }
+        return true;
+      }
+      function renameProject() {
+        const current = S.projectName || 'Project';
+        const next = cleanProjectName(prompt('Rename project:', current));
+        if (!next || next === current) return;
+        if (!saveProjectName(next)) {
+          alert('Project name cannot be empty.');
+          return;
+        }
+        renderAll();
+      }
+      function attachProjectNameMenu() {
+        const nameEl = $('#dirName');
+        if (!nameEl) return;
+        nameEl.addEventListener('contextmenu', (e) => {
+          if (!S.dirHandle) return;
+          e.preventDefault();
+          const menu = el('div', 'ctx-menu');
+          const renBtn = el('button', '');
+          renBtn.textContent = 'Rename project';
+          renBtn.onclick = (ev) => { ev.stopPropagation(); closeCtxMenu(); renameProject(); };
+          menu.appendChild(renBtn);
+          menu.style.left = e.clientX + 'px';
+          menu.style.top = e.clientY + 'px';
+          closeCtxMenu();
+          document.body.appendChild(menu);
+          _ctxMenuEl = menu;
+        });
+      }
+      const $ = (s) => document.querySelector(s),
+        el = (t, c) => {
+          const e = document.createElement(t);
+          if (c) e.className = c;
+          return e;
+        };
+      /** Local time in YYYY-MM-DD HH:mm:ss format (not UTC) */
+      const localNow = () => {
+        const d = new Date(), p = n => String(n).padStart(2, '0');
+        return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+      };
+      const todayISO = () => localNow().slice(0, 10);
+      /** ISO YYYY-MM-DD[...] → dd.mm.yyyy[...] (for UI display; time is preserved) */
+      function fmtDate(iso) {
+        if (!iso) return iso;
+        const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})(.*)/);
+        return m ? `${m[3]}.${m[2]}.${m[1]}${m[4]}` : iso;
+      }
+      /** dd.mm.yyyy → YYYY-MM-DD (for saving from inputs) */
+      function parseDisplayDate(dmy) {
+        if (!dmy) return dmy;
+        const m = dmy.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+        return m ? `${m[3]}-${m[2]}-${m[1]}` : dmy;
+      }
+      function slugify(s) {
+        return (
+          s
+            .toLowerCase()
+            .trim()
+            .replace(/[^\p{L}\p{N}]+/gu, '-')
+            .replace(/^-+|-+$/g, '')
+            .slice(0, 40) || 'task'
+        );
+      }
+      // tags — space-separated uppercase words before the colon: "DEV RESEARCH: Title"
+      const RE_TYPE =
+        /^((?:[A-ZА-Я0-9_+\-]{2,15}(?:\s+[A-ZА-Я0-9_+\-]{2,15})*):\s*)(.+)$/;
+      function splitName(n) {
+        const m = n.match(RE_TYPE);
+        return m ? [m[1].replace(/:.*$/, '').trim(), m[2].trim()] : ['', n];
+      }
+      function cardDisplayName(card) {
+        const sp = card && S.specs.get(card.slug);
+        const raw = (card && card.name || '').trim();
+        return COLUMNS.includes(raw) && sp && sp.title ? sp.title : raw;
+      }
+      function getTags(board, include = []) {
+        // Suggestions are board-local; custom entries are saved, but not leaked into other boards.
+        const set = new Set(include.filter(Boolean));
+        (board ? [board] : []).forEach((b) =>
+          b.columns.forEach((c) =>
+            c.cards.forEach((card) => {
+              const [t] = splitName(card.name);
+              if (t) t.split(/\s+/).forEach((tag) => tag && set.add(tag)); // multiple tags separated by spaces
+            }),
+          ),
+        );
+        return [...set].sort();
+      }
+      function addType(t) {
+        t = normalizeTag(t);
+        if (t && !S.customTypes.includes(t)) {
+          S.customTypes.push(t);
+          saveTypes();
+        }
+        return t;
+      }
+      function markDirty() {
+        S.boards[S.active].dirty = true;
+        $('#dirty').classList.remove('hidden');
+      }
+      async function autoSave() {
+        const b = S.boards[S.active];
+        if (S.dirHandle && b && b.handle) {
+          await save();
+        } else {
+          markDirty();
+        }
+      }
+      function refreshSpecEntry(sp, raw) {
+        sp.raw = raw;
+        Object.assign(sp, parseSpec(raw));
+      }
+      // targeted write of a single spec — no need to iterate the whole board
+      async function writeSpec(sp, statusKey, priority, reminder, fromCol, toCol) {
+        if (!sp || !sp.handle) return;
+        const patched = patchSpecStatus(sp.raw, statusKey, priority, reminder, fromCol, toCol);
+        if (patched === sp.raw) return;
+        refreshSpecEntry(sp, patched);
+        const ww = await sp.handle.createWritable();
+        await ww.write(patched);
+        await ww.close();
+      }
+      async function writeRawSpec(sp, raw) {
+        if (!sp || !sp.handle) return;
+        refreshSpecEntry(sp, raw);
+        const ww = await sp.handle.createWritable();
+        await ww.write(raw);
+        await ww.close();
+      }
+      function setSpecEntry(map, slug, handle, raw, extra = {}) {
+        map.set(slug, { handle, raw, ...extra, ...parseSpec(raw) });
+      }
+      function buildNewTaskSpec(boardName, slug, name, statusKey, tags) {
+        const now = localNow();
+        const priority = tags.priority || 'none';
+        // itemType is intentionally 'unassigned' — the quick-create form does
+        // not decide task vs epic. The analyst assigns the real type when the
+        // BACKLOG idea is triaged (see agents/analyst.md); the linter forbids
+        // 'unassigned' outside BACKLOG/ICEBOX, so it can't leak downstream.
+        return `---
+flowId: ${boardName}/task/${slug}
+itemType: unassigned
+status: ${statusKey || 'backlog'}
+parentId: null
+step: null
+owner: user
+priority: ${priority}
+createdAt: ${tags.created || now}
+updatedAt: ${now}
+reminder: null
+startedAt: null
+testingAt: null
+reviewAt: null
+doneAt: null
+dependsOn: []
+blocks: []
+---
+
+# 📋 ${name}
+
+## Description
+
+## Definition of Done (DoD)
+- [ ] 
+
+## Subtasks
+- [ ] 
+
+## Technical Details
+
+## Output / Artifacts
+- 
+
+## Test Checklist
+- [ ] Main scenario works without errors
+
+## Review Checklist
+- [ ] Artifact or code exists at the expected path
+- [ ] All DoD items are completed
+- [ ] No regressions in adjacent functionality
+- [ ] Documentation or task notes are updated when applicable
+
+## Dependencies
+- Depends on: —
+- Blocks: —
+
+## Changelog
+${now} | user | Task created from dashboard
+
+## Comments
+`;
+      }
+      async function writeNewTaskSpec(boardName, slug, name, statusKey, tags) {
+        if (!S.dirHandle) return null;
+        const specsDir = await S.dirHandle.getDirectoryHandle('specs', { create: true });
+        const handle = await specsDir.getFileHandle(slug + '.md', { create: true });
+        const raw = buildNewTaskSpec(boardName, slug, name, statusKey, tags);
+        const w = await handle.createWritable();
+        await w.write(raw);
+        await w.close();
+        setSpecEntry(S.specs, slug, handle, raw);
+        return raw;
+      }
+
+      /* ════════════ FILE ACCESS ════════════ */
+      // persist folder access across reloads (IndexedDB stores the FileSystemDirectoryHandle)
+      function idb() {
+        return new Promise((res, rej) => {
+          const r = indexedDB.open('kanban', 1);
+          r.onupgradeneeded = () => r.result.createObjectStore('kv');
+          r.onsuccess = () => res(r.result);
+          r.onerror = () => rej(r.error);
+        });
+      }
+      async function idbSet(k, v) {
+        const db = await idb();
+        return new Promise((res, rej) => {
+          const t = db.transaction('kv', 'readwrite');
+          t.objectStore('kv').put(v, k);
+          t.oncomplete = () => res();
+          t.onerror = () => rej(t.error);
+        });
+      }
+      async function idbGet(k) {
+        const db = await idb();
+        return new Promise((res, rej) => {
+          const t = db.transaction('kv', 'readonly');
+          const q = t.objectStore('kv').get(k);
+          q.onsuccess = () => res(q.result);
+          q.onerror = () => rej(q.error);
+        });
+      }
+
+      async function openDir() {
+        if (!window.showDirectoryPicker) {
+          alert(
+            'Browser does not support folder selection (requires Chrome/Edge). Open the dashboard in Chrome.',
+          );
+          return;
+        }
+        let dir;
+        try {
+          dir = await window.showDirectoryPicker();
+        } catch (e) {
+          return;
+        }
+        try {
+          await idbSet(NS + ':tasksDir', dir);
+        } catch (e) {}
+        await loadDir(dir);
+      }
+      // load from a handle. If the workspace root (where this file lives) was picked — descend into tasks/.
+      // _rootName carries the originally-picked folder's name through the recursive
+      // descend so the UI can show "root/tasks" instead of a bare, project-agnostic "tasks".
+      async function loadDir(dir, _recursed, _rootName) {
+        const boards = [];
+        const specs = new Map();
+        let specsDir = null,
+          tasksSub = null,
+          artifactsDir = null;
+        for await (const [n, h] of dir.entries()) {
+          if (h.kind === 'directory' && n === 'specs') specsDir = h;
+          else if (h.kind === 'directory' && n === 'tasks') tasksSub = h;
+          else if (h.kind === 'directory' && n === 'artifacts')
+            artifactsDir = h;
+          else if (h.kind === 'file' && n.endsWith('.md') && n !== 'SKILL.md') {
+            const f = await h.getFile();
+            const txt = await f.text();
+            if (txt.includes('kanban-plugin: board'))
+              boards.push({
+                name: n.replace(/\.md$/, ''),
+                handle: h,
+                board: parseBoard(txt),
+                dirty: false,
+                mtime: f.lastModified,
+              });
+          }
+        }
+        boards.sort((a, b) => b.mtime - a.mtime);
+        if (!boards.length && tasksSub && !_recursed)
+          return loadDir(tasksSub, true, dir.name);
+        if (specsDir) {
+          const specEntries = [];
+          for await (const [n, h] of specsDir.entries()) {
+            if (h.kind === 'file' && n.endsWith('.md')) specEntries.push([n, h]);
+          }
+          await Promise.all(specEntries.map(async ([n, h]) => {
+            const txt = await (await h.getFile()).text();
+            setSpecEntry(specs, n.replace(/\.md$/, ''), h, txt);
+          }));
+        }
+        if (artifactsDir) {
+          const artifactEntries = [];
+          for await (const [n, h] of artifactsDir.entries()) {
+            if (h.kind === 'file' && n.endsWith('.md')) artifactEntries.push([n, h]);
+          }
+          await Promise.all(artifactEntries.map(async ([n, h]) => {
+            const slug = n.replace(/\.md$/, '');
+            if (!specs.has(slug)) {
+              const txt = await (await h.getFile()).text();
+              setSpecEntry(specs, slug, h, txt, { artifact: true });
+            }
+          }));
+        }
+        S.dirHandle = dir;
+        S.boards = boards;
+        S.specs = specs;
+        loadProjectName(dir);
+        // The folder indicator (#dirName) is composed in renderBoard() via
+        // updateDirName() from the user-defined project name, not the folder name —
+        // see the rationale there. renderAll() below triggers that.
+        // restore the last selected project from localStorage
+        const savedBoard = localStorage.getItem('kanban-active-board');
+        const savedIdx = savedBoard ? boards.findIndex(b => b.name === savedBoard) : -1;
+        S.active = savedIdx >= 0 ? savedIdx : (boards.length ? 0 : -1);
+        renderAll();
+        // cache mtimes and (re)start Live if it was enabled
+        await cacheMtimes(dir);
+        // start polling — always while a folder is open
+        if (_liveTimer) clearInterval(_liveTimer);
+        _liveTimer = setInterval(pollDir, LIVE_INTERVAL_MS);
+      }
+      // on page load — silently restore the saved folder
+      async function tryRestore() {
+        let h;
+        try {
+          h = await idbGet(NS + ':tasksDir');
+        } catch (e) {}
+        if (!h) return;
+        let perm = 'prompt';
+        try {
+          perm = await h.queryPermission({ mode: 'readwrite' });
+        } catch (e) {}
+        if (perm === 'granted') {
+          try {
+            await loadDir(h);
+          } catch (e) {}
+        } else showRestore(h);
+      }
+      function showRestore(h) {
+        const es = $('#empty');
+        if (es.querySelector('#restoreBtn')) return;
+        const b = el('button', 'primary');
+        b.id = 'restoreBtn';
+        b.textContent = '◲ Open saved tasks/ folder';
+        b.onclick = async () => {
+          let p = 'denied';
+          try {
+            p = await h.requestPermission({ mode: 'readwrite' });
+          } catch (e) {}
+          if (p === 'granted') await loadDir(h);
+          else alert('Browser denied folder access.');
+        };
+        es.insertBefore(b, es.firstChild);
+      }
+
+      /* ════════════ LIVE RELOAD ════════════ */
+      // Ingest one board .md file. Shared by the two pollDir scan paths (workspace
+      // root and tasks/ subfolder). Returns true if S.boards changed. Note: the file
+      // mtime is cached before the board-content check, so non-board .md files are
+      // recorded once and skipped on later ticks — same as the former inline copies.
+      async function ingestBoardFile(name, handle) {
+        const f = await handle.getFile();
+        const key = 'board:' + name;
+        if (S.fileMtime.get(key) === f.lastModified) return false;
+        S.fileMtime.set(key, f.lastModified);
+        const txt = await f.text();
+        if (!txt.includes('kanban-plugin: board')) return false;
+        const slug = name.replace(/\.md$/, '');
+        const idx = S.boards.findIndex((b) => b.name === slug);
+        if (idx >= 0) {
+          if (S.boards[idx].dirty) return false;
+          S.boards[idx].board = parseBoard(txt);
+          return true;
+        }
+        S.boards.push({ name: slug, handle, board: parseBoard(txt), dirty: false });
+        return true;
+      }
+
+      async function pollDir() {
+        if (!S.dirHandle) return;
+        // Don't re-render the board during an active drag: renderBoard clears
+        // #columns (innerHTML=''), which removes the dragged card and the browser
+        // cancels the drag. The tick is skipped — the next one in 3s will pick it up.
+        if (S.dragActive) return;
+        let changed = false;
+        // preserve navigation state
+        const snap = {
+          active: S.active,
+          note: S.currentNote,
+          scrollY: window.scrollY,
+        };
+        try {
+          // scan the directory (boards + specs + artifacts)
+          let specsDir = null,
+            artifactsDir = null;
+          for await (const [n, h] of S.dirHandle.entries()) {
+            if (h.kind === 'directory' && n === 'specs') specsDir = h;
+            else if (h.kind === 'directory' && n === 'artifacts')
+              artifactsDir = h;
+            else if (h.kind === 'directory' && n === 'tasks') {
+              // if the workspace root is open — scan tasks/
+              for await (const [tn, th] of h.entries()) {
+                if (th.kind === 'directory' && tn === 'specs') specsDir = th;
+                else if (th.kind === 'directory' && tn === 'artifacts')
+                  artifactsDir = th;
+                else if (
+                  th.kind === 'file' &&
+                  tn.endsWith('.md') &&
+                  tn !== 'SKILL.md'
+                ) {
+                  if (await ingestBoardFile(tn, th)) changed = true;
+                }
+              }
+            } else if (
+              h.kind === 'file' &&
+              n.endsWith('.md') &&
+              n !== 'SKILL.md'
+            ) {
+              if (await ingestBoardFile(n, h)) changed = true;
+            }
+          }
+          // specs
+          if (specsDir) {
+            for await (const [n, h] of specsDir.entries()) {
+              if (h.kind !== 'file' || !n.endsWith('.md')) continue;
+              const f = await h.getFile();
+              const key = 'spec:' + n;
+              if (S.fileMtime.get(key) !== f.lastModified) {
+                S.fileMtime.set(key, f.lastModified);
+                const txt = await f.text();
+                setSpecEntry(S.specs, n.replace(/\.md$/, ''), h, txt);
+                changed = true;
+              }
+            }
+          }
+          // artifacts
+          if (artifactsDir) {
+            for await (const [n, h] of artifactsDir.entries()) {
+              if (h.kind !== 'file' || !n.endsWith('.md')) continue;
+              const slug = n.replace(/\.md$/, '');
+              if (S.specs.has(slug)) continue;
+              const f = await h.getFile();
+              const key = 'art:' + n;
+              if (S.fileMtime.get(key) !== f.lastModified) {
+                S.fileMtime.set(key, f.lastModified);
+                const txt = await f.text();
+                setSpecEntry(S.specs, slug, h, txt, { artifact: true });
+                changed = true;
+              }
+            }
+          }
+        } catch (e) {
+          // lost access to the folder — stop polling
+          if (_liveTimer) {
+            clearInterval(_liveTimer);
+            _liveTimer = null;
+          }
+          const liveTs = $('#liveTs');
+          if (liveTs) liveTs.textContent = '';
+          return;
+        }
+        if (changed) {
+          // restore state before rendering
+          S.active =
+            snap.active < S.boards.length
+              ? snap.active
+              : S.boards.length
+                ? 0
+                : -1;
+          S.currentNote = snap.note;
+          renderAll();
+          // if a note was open — refresh its content without reopening the panel
+          if (snap.note) {
+            // look for the card on the active board; if absent (artifact/spec without a card) — fakeCard
+            let card = null;
+            if (S.active >= 0 && S.boards[S.active]) {
+              for (const col of S.boards[S.active].board.columns) {
+                card = col.cards.find((c) => c.slug === snap.note);
+                if (card) break;
+              }
+            }
+            if (!card)
+              card = {
+                slug: snap.note,
+                name: snap.note,
+                tags: {},
+                checked: false,
+              };
+            renderNote(card);
+            renderComments(card);
+          }
+          window.scrollTo(0, snap.scrollY);
+          // only show the timestamp when files actually changed
+          const now = new Date();
+          const ts = now.toLocaleTimeString('ru-RU', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+          });
+          const liveTs = $('#liveTs');
+          if (liveTs) liveTs.textContent = '↻ ' + ts;
+        }
+      }
+
+      // initialize the mtime cache after loadDir (so the first poll doesn't treat everything as "new")
+      async function cacheMtimes(dir) {
+        S.fileMtime.clear();
+        const scanDir = async (d, prefix) => {
+          for await (const [n, h] of d.entries()) {
+            if (
+              h.kind === 'directory' &&
+              (n === 'specs' || n === 'artifacts' || n === 'tasks')
+            ) {
+              await scanDir(h, n);
+            } else if (h.kind === 'file' && n.endsWith('.md')) {
+              const f = await h.getFile();
+              S.fileMtime.set(prefix + ':' + n, f.lastModified);
+            }
+          }
+        };
+        await scanDir(dir, 'board');
+      }
+
+      let _ctxMenuEl = null;
+      function closeCtxMenu() {
+        if (_ctxMenuEl) { _ctxMenuEl.remove(); _ctxMenuEl = null; }
+      }
+      function showBoardCtxMenu(x, y, idx) {
+        closeCtxMenu();
+        const menu = el('div', 'ctx-menu');
+        const renBtn = el('button', '');
+        renBtn.textContent = 'Rename board';
+        renBtn.onclick = (e) => { e.stopPropagation(); closeCtxMenu(); renameBoard(idx); };
+        menu.appendChild(renBtn);
+        const delBtn = el('button', 'danger');
+        delBtn.textContent = 'Delete board';
+        delBtn.onclick = (e) => { e.stopPropagation(); closeCtxMenu(); deleteBoard(idx); };
+        menu.appendChild(delBtn);
+        menu.style.left = x + 'px';
+        menu.style.top = y + 'px';
+        document.body.appendChild(menu);
+        _ctxMenuEl = menu;
+      }
+      async function deleteBoard(idx) {
+        const b = S.boards[idx];
+        if (!confirm(`Delete board "${b.name}"?`)) return;
+        if (b.handle && S.dirHandle) {
+          try { await S.dirHandle.removeEntry(b.name + '.md'); } catch (_) {}
+        }
+        S.boards.splice(idx, 1);
+        if (S.active >= S.boards.length) S.active = S.boards.length - 1;
+        renderAll();
+      }
+
+      async function renameBoard(idx) {
+        const b = S.boards[idx];
+        const newName = prompt('Rename board to (slug):', b.name);
+        if (!newName || newName === b.name) return;
+        const newSlug = slugify(newName);
+        if (S.dirHandle) {
+          try {
+            // Read current content, write to new file, remove old
+            const oldFile = await b.handle.getFile();
+            const content = await oldFile.text();
+            const newHandle = await S.dirHandle.getFileHandle(newSlug + '.md', { create: true });
+            const writable = await newHandle.createWritable();
+            await writable.write(content);
+            await writable.close();
+            await S.dirHandle.removeEntry(b.name + '.md');
+            b.handle = newHandle;
+            b.name = newSlug;
+            if (S.active === idx) localStorage.setItem('kanban-active-board', newSlug);
+            renderAll();
+          } catch (err) {
+            alert('Could not rename on disk: ' + err.message + '\n\nRename the file manually: ' + b.name + '.md → ' + newSlug + '.md, then reload.');
+          }
+        } else {
+          // In-memory only: just rename the display name
+          b.name = newSlug;
+          if (S.active === idx) localStorage.setItem('kanban-active-board', newSlug);
+          renderAll();
+        }
+      }
+
+      async function newBoard() {
+        const name = prompt('New board slug:', 'project');
+        if (!name) return;
+        const slug = slugify(name);
+        const board = parseBoard('---\n\nkanban-plugin: board\n\n---\n');
+        const initMd = serializeBoard(board);
+        let handle = null;
+        if (S.dirHandle) {
+          try {
+            handle = await S.dirHandle.getFileHandle(slug + '.md', { create: true });
+            const w = await handle.createWritable();
+            await w.write(initMd);
+            await w.close();
+          } catch (_) {
+            // no permission or collision — fallback to in-memory
+          }
+        }
+        S.boards.push({ name: slug, handle, board, dirty: !handle });
+        S.active = S.boards.length - 1;
+        renderAll();
+        if (handle) flash('Created board ' + slug + '.md');
+      }
+      async function save() {
+        const b = S.boards[S.active];
+        if (!b) return;
+        const md = serializeBoard(b.board);
+        // sync spec status by column (parity with sync_properties.py)
+        const specWrites = [];
+        for (const col of b.board.columns)
+          for (const c of col.cards) {
+            const sp = S.specs.get(c.slug);
+            if (sp) {
+              const patched = patchSpecStatus(sp.raw, COL_STATUS[col.name]);
+              if (patched !== sp.raw) {
+                refreshSpecEntry(sp, patched);
+                if (sp.handle) specWrites.push([sp.handle, patched]);
+              }
+            }
+          }
+        if (b.handle) {
+          const w = await b.handle.createWritable();
+          await w.write(md);
+          await w.close();
+          for (const [h, txt] of specWrites) {
+            const ww = await h.createWritable();
+            await ww.write(txt);
+            await ww.close();
+          }
+          b.dirty = false;
+          $('#dirty').classList.add('hidden');
+          flash('Saved to file');
+        } else {
+          const a = el('a');
+          a.href = URL.createObjectURL(
+            new Blob([md], { type: 'text/markdown' }),
+          );
+          a.download = b.name + '.md';
+          a.click();
+          b.dirty = false;
+          $('#dirty').classList.add('hidden');
+          flash('Downloaded ' + b.name + '.md');
+        }
+      }
+      function flash(t) {
+        const f = $('#boardFile');
+        const o = f.textContent;
+        f.textContent = t;
+        setTimeout(() => (f.textContent = o), 1600);
+      }
+
+      /* ════════════ RENDER ════════════ */
+      function renderAll() {
+        renderSidebar();
+        renderBoard();
+      }
+      function renderSidebar() {
+        const box = $('#boards');
+        box.innerHTML = '';
+        // Mirror renderBoard()'s per-column/per-card isolation (round 3 fix):
+        // one malformed board object must not blank the whole sidebar list,
+        // which previously threw out of renderAll() before #columns was even
+        // attempted (found round 4: exported-snapshot screenshot showed an
+        // empty BOARDS list *and* empty #columns together — this loop had no
+        // try/catch while renderBoard()'s did).
+        S.boards.forEach((b, i) => {
+          try {
+            const n = b.board.columns.reduce((a, c) => a + c.cards.length, 0);
+            const it = el(
+              'div',
+              'board-item' + (i === S.active ? ' active' : ''),
+            );
+            it.innerHTML = `<span class="dot"></span><span class="board-name">${b.name}</span><span class="n">${n}</span>`;
+            it.onclick = () => {
+              S.active = i;
+              localStorage.setItem('kanban-active-board', S.boards[i].name);
+              renderAll();
+            };
+            it.addEventListener('contextmenu', (e) => {
+              e.preventDefault();
+              showBoardCtxMenu(e.clientX, e.clientY, i);
+            });
+            box.appendChild(it);
+          } catch (err) {
+            console.error('renderSidebar failed for board', b && b.name, err);
+          }
+        });
+      }
+      // Sidebar-footer indicator shows the user-defined project label for the
+      // opened tasks/ directory. The File System Access API exposes only the
+      // picked handle name (usually just "tasks"), not the parent folder, so
+      // the user supplies the cross-board project name and the dashboard keeps
+      // it as UI-only local state.
+      function updateDirName() {
+        const el = $('#dirName');
+        if (!el) return;
+        el.textContent = S.projectName ? 'project: ' + S.projectName : '';
+      }
+      function renderBoard() {
+        const b = S.boards[S.active];
+        updateDirName();
+        if (window.updateFilterUi) window.updateFilterUi();
+        $('#columns').classList.toggle('hidden', !b || S.viewMode === 'artifacts');
+        $('#artifactPage').classList.toggle('hidden', !b || S.viewMode !== 'artifacts');
+        $('#empty').classList.toggle('hidden', !!b);
+        $('#btnAddTask').classList.toggle('hidden', !b);
+        if (!b) {
+          $('#boardTitle').textContent = 'No board open';
+          $('#boardFile').textContent = '';
+          updateBoardArtifactsButton([]);
+          return;
+        }
+        $('#boardTitle').textContent = b.name;
+        $('#boardFile').textContent = b.handle
+          ? '.md'
+          : b.dirty
+            ? 'new'
+            : '.md · in-memory only';
+        $('#dirty').classList.toggle('hidden', !b.dirty);
+        updateBoardArtifactsButton(collectBoardArtifacts(b.board));
+        if (S.viewMode === 'artifacts') {
+          renderArtifactsPage();
+          return;
+        }
+        const wrap = $('#columns');
+        wrap.innerHTML = '';
+        // One bad card/column must not blank the whole board: a single uncaught
+        // exception inside this forEach used to abort every remaining column,
+        // leaving #columns empty with no visible error (found in dogfooding
+        // 2026-07-04: user saw an "open" board with title/buttons but zero
+        // columns/cards, root cause never surfaced because failures were silent).
+        b.board.columns.forEach((col) => {
+          try {
+            const cEl = el('div', 'col');
+            cEl.dataset.col = col.name;
+            const visible = col.cards.filter((c) => matchFilter(c, col.name))
+              .sort((a, b) => (b.tags.done || '').localeCompare(a.tags.done || ''));
+            // Header count must reflect what's actually rendered below — it used to always
+            // show col.cards.length regardless of any active filter (search/tag/artifact),
+            // so the count looked frozen while cards visibly appeared/disappeared (found in
+            // dogfooding 2026-07-05: user reported "количество карточек не меняется" against
+            // the artifact filter, but the bug affected every filter, not just that one).
+            const cnt = visible.length === col.cards.length
+              ? String(col.cards.length)
+              : `${visible.length}/${col.cards.length}`;
+            cEl.innerHTML = `<div class="col-h"><span class="bar"></span>${col.name}<span class="cnt">${cnt}</span></div>`;
+            const drop = el('div', 'drop');
+            drop.dataset.col = col.name;
+            visible.forEach((card) => {
+              try {
+                drop.appendChild(renderCard(card, col.name));
+              } catch (err) {
+                console.error('renderCard failed for', card.slug, err);
+              }
+            });
+            // drag & drop
+            drop.addEventListener('dragover', (e) => {
+              e.preventDefault();
+              e.dataTransfer.dropEffect = 'move';
+              drop.classList.add('over');
+            });
+            drop.addEventListener('dragleave', (e) => {
+              if (!drop.contains(e.relatedTarget)) drop.classList.remove('over');
+            });
+            drop.addEventListener('drop', async (e) => {
+              e.preventDefault();
+              drop.classList.remove('over');
+              try {
+                await moveCard(e.dataTransfer.getData('text/plain'), col.name);
+              } catch (err) {
+                flashMsg('◬ Move save error: ' + (err && err.message || String(err)), 5000);
+              }
+            });
+            cEl.appendChild(drop);
+            wrap.appendChild(cEl);
+          } catch (err) {
+            console.error('renderBoard failed for column', col.name, err);
+          }
+        });
+        applyColVisibility();
+      }
+      function applyColVisibility() {
+        document.querySelectorAll('#columns .col').forEach((cEl) => {
+          const hasCards = cEl.querySelectorAll('.drop .card').length > 0;
+          cEl.classList.toggle('col-empty', !hasCards);
+        });
+        $('#columns').classList.toggle('show-empty', S.settings.showEmptyColumns);
+      }
+      function renderCard(card, colName) {
+        const sp = S.specs.get(card.slug);
+        const [type, title] = splitName(cardDisplayName(card));
+        const c = el('div', 'card' + (card.checked ? ' done' : ''));
+        c.draggable = true;
+        c.addEventListener('dragstart', (e) => {
+          e.dataTransfer.setData('text/plain', card.slug);
+          e.dataTransfer.effectAllowed = 'move';
+          c.classList.add('dragging');
+        });
+        c.addEventListener('dragend', () => c.classList.remove('dragging'));
+        // row 1: checkbox + block (title, with the type underneath)
+        const r1 = el('div', 'row1');
+        const ck = el('input', 'ck');
+        ck.type = 'checkbox';
+        ck.checked = card.checked;
+        ck.onclick = (e) => {
+          e.stopPropagation();
+          card.checked = ck.checked;
+          renderBoard();
+          autoSave().catch((err) => flashMsg('◬ Save error: ' + (err && err.message || err), 5000));
+        };
+        r1.appendChild(ck);
+        const tb = el('div', 'tblock');
+        const ti = el('div', 'title');
+        ti.textContent = title;
+        tb.appendChild(ti);
+        // task type: itemType from the spec (Epic/Task/Subtask). 'unassigned'
+        // (dashboard-created, not yet triaged by the analyst) shows no badge —
+        // the whole point is that the type isn't decided yet.
+        const itemType = sp && sp.itemType;
+        if (S.settings.showItemType && itemType && itemType !== 'unassigned') {
+          const ty = el('div', 'type');
+          ty.textContent =
+            (ITEM_ICON[itemType] || '') +
+            ' ' +
+            (ITEM_LABEL[itemType] || itemType);
+          tb.appendChild(ty);
+        }
+        // tags from the card name: "DEV RESEARCH: Title" → two badges, DEV and RESEARCH
+        if (S.settings.showTags && type) {
+          const tagRow = el('div', 'tags');
+          type
+            .split(/\s+/)
+            .filter(Boolean)
+            .forEach((tag) => {
+              const tg = el('span', 'tag');
+              tg.textContent = tag;
+              tagRow.appendChild(tg);
+            });
+          tb.appendChild(tagRow);
+        }
+        r1.appendChild(tb);
+        c.appendChild(r1);
+        // note content: description from the spec (configurable setting)
+        if (S.settings.showDesc && sp && sp.desc) {
+          const d = el('div', 'desc');
+          d.textContent = sp.desc;
+          c.appendChild(d);
+        }
+        // metadata
+        const meta = el('div', 'meta');
+        const due = (sp && sp.due) || card.tags.due;
+        const start = (sp && sp.startedAt && sp.startedAt !== 'null' && sp.startedAt) || (sp && sp.start) || card.tags.start;
+        const done = (sp && sp.doneAt && sp.doneAt !== 'null' && sp.doneAt) || card.tags.done;
+        const estimate = (sp && sp.estimate) || card.tags.estimate;
+        const priority = (sp && sp.priority) || card.tags.priority;
+        const owner = sp && sp.owner;
+        const status = (sp && sp.status) || COL_STATUS[colName];
+        if (S.settings.showDue && due)
+          meta.innerHTML += `<span title="deadline">⬦ ${fmtDate(due)}</span>`;
+        if (S.settings.showStart && start)
+          meta.innerHTML += `<span title="start">→ ${fmtDate(start)}</span>`;
+        if (S.settings.showEstimate && estimate)
+          meta.innerHTML += `<span class="est" title="estimate">~ ${estimate}</span>`;
+        if (S.settings.showPriority && priority === 'high')
+          meta.innerHTML += `<span class="pri-h">● high</span>`;
+        if (S.settings.showPriority && priority === 'medium')
+          meta.innerHTML += `<span class="pri-m">◐ medium</span>`;
+        if (S.settings.showPriority && priority === 'low')
+          meta.innerHTML += `<span class="pri-l">○ low</span>`;
+        if (S.settings.showRecurring && card.tags.recurring) {
+          const remVal = (S.specs.get(card.slug) || {}).reminder;
+          meta.innerHTML += `<span title="Recurring${remVal ? ': ' + remVal : ''}">↺${remVal ? ' <small style="opacity:.7">' + remVal + '</small>' : ''}</span>`;
+        }
+        if (S.settings.showOwner && owner)
+          meta.innerHTML += `<span title="original task author">@ ${esc(owner)}</span>`;
+        if (S.settings.showStatus && status)
+          meta.innerHTML += `<span class="card-status" title="status">◈ ${status}</span>`;
+        if (S.settings.showDone && done)
+          meta.innerHTML += `<span title="done">✓ ${fmtDate(done)}</span>`;
+        if (meta.children.length) c.appendChild(meta);
+        // DoD progress (content)
+        if (S.settings.showDod && sp && sp.dod && sp.dod.total) {
+          const pct = Math.round((sp.dod.done / sp.dod.total) * 100);
+          const dod = el('div', 'dod');
+          dod.innerHTML =
+            `<span class="dod-c">DoD ${sp.dod.done}/${sp.dod.total}</span>` +
+            `<span class="dod-bar"><i style="width:${pct}%"></i></span>`;
+          c.appendChild(dod);
+        }
+        // Compact cards show only execution-blocking relationships.
+        const cardLinks = blockingLinks(sp);
+        if (S.settings.showDeps && cardLinks.length) {
+          const lk = el('div', 'links');
+          cardLinks.slice(0, 6)
+            .forEach((s) => lk.appendChild(wikilink(s)));
+          c.appendChild(lk);
+        }
+        c.onclick = () => openEditor(card, colName);
+        return c;
+      }
+      function wikilink(slug) {
+        const w = el('span', 'wl');
+        w.textContent = '[[' + slug + ']]';
+        const found = findCard(slug);
+        if (!found && !S.specs.has(slug)) w.classList.add('missing');
+        w.onclick = (e) => {
+          e.stopPropagation();
+          jumpTo(slug);
+        };
+        return w;
+      }
+      const PRIORITY_ALIAS = { '🟥': 'high', '🟨': 'medium', '🟩': 'low' };
+      const TAG_EMOJI = { '➕': 'created', '🛫': 'start', '📅': 'due', '⏳': 'estimate', '🔁': 'recurring' };
+      function specIsArtifact(sp) {
+        return !!sp && (sp.artifact || sp.itemType === 'artifact');
+      }
+      function normalizeWikiTarget(target) {
+        return String(target || '')
+          .trim()
+          .replace(/\\/g, '/')
+          .split('#')[0]
+          .split('/')
+          .filter(Boolean)
+          .pop()
+          ?.replace(/\.md$/i, '') || '';
+      }
+      function resolveSpecSlug(target) {
+        const raw = String(target || '').trim();
+        const normalized = normalizeWikiTarget(raw);
+        return [raw, normalized, raw.replace(/\.md$/i, '')].find((slug) => slug && S.specs.has(slug)) || '';
+      }
+      function extractSection(body, names) {
+        if (!body) return '';
+        const wanted = names.map((n) => n.toLowerCase());
+        const lines = String(body).replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+        const out = [];
+        let active = false;
+        for (const line of lines) {
+          if (line.startsWith('## ')) {
+            const title = line.slice(3).trim().toLowerCase();
+            active = wanted.some((n) => title.includes(n));
+            continue;
+          }
+          if (active) out.push(line);
+        }
+        return out.join('\n');
+      }
+      function outputArtifactLinks(sp) {
+        const section = extractSection(sp && sp.body, ['output', 'artifacts']);
+        const links = [];
+        if (!section) return links;
+        let m;
+        RE_LINK_G.lastIndex = 0;
+        while ((m = RE_LINK_G.exec(section))) {
+          const target = (m[1] || '').trim();
+          if (!target) continue;
+          links.push(target);
+        }
+        return links;
+      }
+      function collectBoardArtifacts(board) {
+        const bySlug = new Map();
+        if (!board) return [];
+        const cardSlugs = new Set();
+        board.columns.forEach((col) => col.cards.forEach((card) => cardSlugs.add(card.slug)));
+        function addArtifact(slug, sourceSlug, reason) {
+          if (!slug) return;
+          const resolvedSlug = resolveSpecSlug(slug);
+          const normalizedSlug = resolvedSlug || normalizeWikiTarget(slug);
+          if (!normalizedSlug) return;
+          const sp = resolvedSlug ? S.specs.get(resolvedSlug) : null;
+          const sourceSp = S.specs.get(sourceSlug);
+          const stamp = (sp && (sp.updatedAt || sp.createdAt || sp.doneAt || sp.startedAt)) ||
+            (sourceSp && (sourceSp.updatedAt || sourceSp.createdAt || sourceSp.doneAt || sourceSp.startedAt)) ||
+            '';
+          const existing = bySlug.get(normalizedSlug) || {
+            slug: normalizedSlug,
+            rawTargets: new Set(),
+            title: (sp && sp.title) || slug,
+            itemType: (sp && sp.itemType) || '',
+            stamp,
+            missing: !sp,
+            sources: new Set(),
+            reasons: new Set(),
+          };
+          existing.rawTargets.add(slug);
+          existing.sources.add(sourceSlug);
+          existing.reasons.add(reason);
+          if (sp) {
+            existing.title = sp.title || existing.title;
+            existing.itemType = sp.itemType || existing.itemType;
+            existing.stamp = sp.updatedAt || sp.createdAt || sp.doneAt || sp.startedAt || existing.stamp;
+            existing.missing = false;
+          } else if (!existing.stamp && stamp) {
+            existing.stamp = stamp;
+          }
+          bySlug.set(normalizedSlug, existing);
+        }
+        cardSlugs.forEach((taskSlug) => {
+          const sp = S.specs.get(taskSlug);
+          outputArtifactLinks(sp).forEach((slug) => {
+            // A loaded spec that is NOT an artifact (a task/epic cross-linked in the
+            // Output section) is not an artifact — skip it. Unresolved targets (spec not
+            // loaded) are kept so genuinely-missing artifacts still surface as "Other".
+            const target = S.specs.get(resolveSpecSlug(slug) || slug);
+            if (target && !specIsArtifact(target)) return;
+            addArtifact(slug, taskSlug, 'output');
+          });
+          (sp && sp.links || [])
+            .filter((slug) => specIsArtifact(S.specs.get(resolveSpecSlug(slug) || slug)))
+            .forEach((slug) => addArtifact(slug, taskSlug, 'link'));
+        });
+        for (const [artifactSlug, sp] of S.specs.entries()) {
+          if (specIsArtifact(sp) && cardSlugs.has(sp.linkedTask))
+            addArtifact(artifactSlug, sp.linkedTask, 'linkedTask');
+        }
+        return [...bySlug.values()].sort((a, b) => a.title.localeCompare(b.title));
+      }
+      function updateBoardArtifactsButton(items) {
+        const trigger = $('#boardArtifactsTrigger');
+        if (!trigger) return;
+        trigger.textContent = `▷ Artifacts ${items.length}`;
+        trigger.disabled = !S.boards[S.active];
+        trigger.classList.toggle('on', S.viewMode === 'artifacts');
+      }
+      function renderArtifactsPage() {
+        const page = $('#artifactPage');
+        const b = S.boards[S.active];
+        if (!page || !b) return;
+        const allItems = collectBoardArtifacts(b.board);
+        const items = allItems.filter(matchArtifactFilter);
+        updateBoardArtifactsButton(allItems);
+        page.innerHTML = '';
+        if (!items.length) {
+          const empty = el('div', 'empty-note');
+          empty.textContent = allItems.length ? 'No artifacts match this filter.' : 'No artifacts linked to this board.';
+          page.appendChild(empty);
+          return;
+        }
+        const grid = el('div', 'artifact-grid');
+        items.forEach((item) => {
+          const card = el('article', 'artifact-item' + (item.missing ? ' missing' : ''));
+          const sourceSlugs = [...item.sources];
+          const sources = sourceSlugs
+            .slice(0, 5)
+            .map((slug) => `<span class="artifact-source-chip clickable" data-source="${esc(slug)}">${esc(slug)}</span>`)
+            .join('');
+          const more = sourceSlugs.length > 5
+            ? `<span class="artifact-source-chip">+${sourceSlugs.length - 5}</span>`
+            : '';
+          const openArtifact = item.missing
+            ? ''
+            : `<button class="artifact-action" data-open-artifact="${esc(item.slug)}">Open artifact</button>`;
+          const openSource = sourceSlugs[0]
+            ? `<button class="artifact-action" data-open-source="${esc(sourceSlugs[0])}">Open source note</button>`
+            : '';
+          card.innerHTML =
+            `<span class="artifact-icon">◇</span><span>` +
+            `<div class="artifact-title">${esc(item.title)}</div>` +
+            `<div class="artifact-meta">[[${esc(item.slug)}]]${item.stamp ? ' · ' + esc(fmtDate(item.stamp)) : ''}${item.missing ? ' · Other' : ''}</div>` +
+            `<div class="artifact-sources">${sources}${more}</div>` +
+            `<div class="artifact-actions">${openArtifact}${openSource}</div></span>`;
+          card.querySelectorAll('[data-open-artifact]').forEach((btn) => {
+            btn.onclick = () => peekNote(btn.dataset.openArtifact);
+          });
+          card.querySelectorAll('[data-open-source]').forEach((btn) => {
+            btn.onclick = () => jumpTo(btn.dataset.openSource);
+          });
+          card.querySelectorAll('[data-source]').forEach((chip) => {
+            chip.onclick = () => jumpTo(chip.dataset.source);
+          });
+          grid.appendChild(card);
+        });
+        page.appendChild(grid);
+      }
+      function matchFilter(card, colName) {
+        if (!S.filter) return true;
+        const raw = S.filter.trim();
+        // emoji tag shorthand: 🛫 → cards with a start date, etc.
+        if (TAG_EMOJI[raw]) {
+          const key = TAG_EMOJI[raw];
+          return key === 'recurring' ? !!card.tags?.recurring : !!card.tags?.[key];
+        }
+        const f = (PRIORITY_ALIAS[raw] || raw).toLowerCase();
+        const status = (colName && COL_STATUS[colName]) || '';
+        const sp = S.specs.get(card.slug);
+        const priority = (sp && sp.priority) || card.tags?.priority || '';
+        return (
+          card.name.toLowerCase().includes(f) ||
+          card.slug.toLowerCase().includes(f) ||
+          priority.includes(f) ||
+          status.includes(f) ||
+          (colName || '').toLowerCase().includes(f)
+        );
+      }
+      function matchArtifactFilter(item) {
+        if (S.artifactPageFilter === 'openable' && item.missing) return false;
+        if (S.artifactPageFilter === 'missing' && !item.missing) return false;
+        if (!S.filter) return true;
+        const f = S.filter.trim().toLowerCase();
+        if (!f) return true;
+        const haystack = [
+          item.title,
+          item.slug,
+          item.itemType,
+          [...item.rawTargets].join(' '),
+          [...item.sources].join(' '),
+          [...item.reasons].join(' '),
+          item.stamp,
+          item.missing ? 'other missing' : 'readable openable',
+        ].join(' ').toLowerCase();
+        return haystack.includes(f);
+      }
+      function findCard(slug) {
+        for (let bi = 0; bi < S.boards.length; bi++)
+          for (const col of S.boards[bi].board.columns)
+            for (const c of col.cards)
+              if (c.slug === slug) return { bi, col: col.name, card: c };
+        return null;
+      }
+      function jumpTo(slug) {
+        const f = findCard(slug);
+        if (f) {
+          S.active = f.bi;
+          renderAll();
+          setTimeout(() => openEditor(f.card, f.col), 50);
+        } else if (S.specs.has(slug))
+          peekNote(slug, true); // fromJump=true
+        else alert('Target [[' + slug + ']] not found among open files.');
+      }
+      function flashMsg(text, ms = 3000, action = null) {
+        let t = document.getElementById('flashMsg');
+        if (!t) {
+          t = document.createElement('div');
+          t.id = 'flashMsg';
+          document.body.appendChild(t);
+        }
+        t.textContent = text;
+        // optional clickable action, e.g. {label:'Open', onClick:fn} — appended
+        // as a link after the text. Without it, behaviour is unchanged.
+        if (action && action.label && typeof action.onClick === 'function') {
+          const a = document.createElement('a');
+          a.textContent = action.label;
+          a.href = '#';
+          a.className = 'flash-action';
+          a.onclick = (ev) => {
+            ev.preventDefault();
+            t.style.opacity = '0';
+            action.onClick();
+          };
+          t.appendChild(a);
+        }
+        t.style.opacity = '1';
+        clearTimeout(t._timer);
+        t._timer = setTimeout(() => { t.style.opacity = '0'; }, ms);
+      }
+      async function findInDirHandle(dir, name, prefix) {
+        for await (const [n, h] of dir.entries()) {
+          if (h.kind === 'file' && n === name) return { path: prefix + '/' + n, dirHandle: dir };
+          if (h.kind === 'directory') {
+            const r = await findInDirHandle(h, name, prefix + '/' + n);
+            if (r) return r;
+          }
+        }
+        return null;
+      }
+      function folderAbsPath(relPath) {
+        try {
+          const loc = window.location.href;
+          if (!loc.startsWith('file:///')) return relPath;
+          const raw = decodeURIComponent(loc.replace(/^file:\/\/\//, ''));
+          // Windows: 'D:/.cowork/...' (drive letter — already absolute)
+          // macOS/Linux: 'Users/foo/...' (leading '/' stripped by file:///) → restore it
+          const abs = /^[A-Za-z]:/.test(raw) ? raw : '/' + raw;
+          const base = abs.replace(/tasks[/\\]kanban-dashboard\.html[^]*$/, '');
+          const sep = base.includes('\\') ? '\\' : '/';
+          return base.replace(/[/\\]$/, '') + sep + relPath.replace(/\//g, sep);
+        } catch(e) { return relPath; }
+      }
+      // save a pasted File under tasks/attachments/<slug>/ via the open dirHandle.
+      // returns the relative path 'attachments/<slug>/<filename>' or throws on failure.
+      async function saveAttachment(file, slug) {
+        if (!S.dirHandle) throw new Error('tasks/ folder not open');
+        const attachmentsDir = await S.dirHandle.getDirectoryHandle('attachments', { create: true });
+        const slugDir = await attachmentsDir.getDirectoryHandle(slug, { create: true });
+        let filename = file.name && file.name.trim();
+        // markdown link syntax breaks on spaces/parens/brackets in the URL segment (e.g. a
+        // real dropped/pasted file named "report (1).pdf" truncates mdInline()'s link regex
+        // mid-URL, rendering as broken plain text instead of a clickable attachment badge) —
+        // sanitize before it ever reaches disk so the same name is safe as both link text and URL.
+        if (filename) filename = filename.replace(/\s+/g, '_').replace(/[()[\]]/g, '');
+        // pasted clipboard images typically have no useful name (e.g. "image.png" or empty) —
+        // generate a deterministic, collision-free name based on the MIME type instead.
+        const hasUsableName = filename && !/^image\.(png|jpe?g|gif|webp|bmp)$/i.test(filename);
+        if (!hasUsableName) {
+          const ext = (file.type.split('/')[1] || 'bin').replace(/[^a-z0-9]/gi, '') || 'bin';
+          const base = (file.type.split('/')[0] || 'file').replace(/[^a-z0-9]/gi, '') || 'file';
+          let n = 1;
+          for (;;) {
+            const candidate = `${base}-${n}.${ext}`;
+            try {
+              await slugDir.getFileHandle(candidate, { create: false });
+              n++; // exists — try next suffix
+            } catch (e) {
+              filename = candidate; // getFileHandle threw NotFoundError → free name
+              break;
+            }
+          }
+        } else {
+          // even a "real" filename could collide with an existing attachment — dedupe it too.
+          const dot = filename.lastIndexOf('.');
+          const stem = dot > 0 ? filename.slice(0, dot) : filename;
+          const ext = dot > 0 ? filename.slice(dot) : '';
+          let candidate = filename,
+            n = 1;
+          for (;;) {
+            try {
+              await slugDir.getFileHandle(candidate, { create: false });
+              candidate = `${stem}-${n}${ext}`;
+              n++;
+            } catch (e) {
+              filename = candidate;
+              break;
+            }
+          }
+        }
+        const fh = await slugDir.getFileHandle(filename, { create: true });
+        const w = await fh.createWritable();
+        await w.write(file);
+        await w.close();
+        return `attachments/${slug}/${filename}`;
+      }
+      // insert text at the current cursor position of a textarea, moving the caret after it.
+      function insertAtCursor(textarea, text) {
+        const start = textarea.selectionStart ?? textarea.value.length;
+        const end = textarea.selectionEnd ?? textarea.value.length;
+        textarea.value = textarea.value.slice(0, start) + text + textarea.value.slice(end);
+        const pos = start + text.length;
+        textarea.selectionStart = textarea.selectionEnd = pos;
+        textarea.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+      async function openContainingFolder(slug) {
+        if (!S.dirHandle) { await openDir(); return; }
+        flashMsg('→ Searching ' + slug + '…');
+        const found = await findInDirHandle(S.dirHandle, slug, 'tasks');
+        if (found) {
+          const rel = found.path.replace('/' + slug, '') || 'tasks';
+          const abs = folderAbsPath(rel);
+          try {
+            await navigator.clipboard.writeText(abs);
+            flashMsg('✓ Copied: ' + abs, 7000);
+          } catch(e) {
+            flashMsg('⊙ ' + abs, 7000);
+          }
+        } else {
+          flashMsg('⊙ ' + slug + ' — not found in tasks/', 5000);
+        }
+      }
+      // open a non-image attachment (attachments/<slug>/<file>) directly via S.dirHandle —
+      // same resolve pattern as the img.comment-img[data-attach] preview, but for arbitrary file types.
+      // Falls back to openContainingFolder(basename) if the exact path can't be resolved or the
+      // browser blocks the popup (window.open returning null/undefined on a blocked popup).
+      async function openAttachmentFile(relPath, basename) {
+        if (!S.dirHandle) { await openDir(); return; }
+        try {
+          const parts = relPath.split('/').filter(Boolean); // attachments/<slug>/<file>
+          let dir = S.dirHandle;
+          for (let i = 0; i < parts.length - 1; i++) {
+            dir = await dir.getDirectoryHandle(parts[i]);
+          }
+          const fh = await dir.getFileHandle(parts[parts.length - 1]);
+          const file = await fh.getFile();
+          const url = URL.createObjectURL(file);
+          const win = window.open(url, '_blank');
+          if (!win) { flashMsg('⊙ Popup blocked — copying folder path instead', 5000); await openContainingFolder(basename || parts[parts.length - 1]); }
+        } catch (e) {
+          await openContainingFolder(basename || relPath.split('/').pop());
+        }
+      }
+
+      /* ════════════ DRAG-DROP / EDITOR ════════════ */
+      async function moveCard(slug, toCol) {
+        const b = S.boards[S.active];
+        for (const col of b.board.columns) {
+          const idx = col.cards.findIndex((c) => c.slug === slug);
+          if (idx > -1) {
+            const fromCol = col.name;
+            if (fromCol === toCol) return;
+            const target = b.board.columns.find((c) => c.name === toCol);
+            if (!target) throw new Error('Unknown column: ' + toCol);
+            const [card] = col.cards.splice(idx, 1);
+            const oldChecked = card.checked;
+            const sp = S.specs.get(slug);
+            const oldRaw = sp && sp.raw;
+            if (toCol === 'DONE') {
+              card.checked = true;
+              card.tags = card.tags || {};
+              if (!card.tags.done) card.tags.done = localNow();
+            } else if (fromCol === 'DONE') {
+              card.checked = false;
+              if (card.tags) delete card.tags.done;
+            }
+            target.cards.push(card);
+            if (toCol === 'DONE') sortDoneCards(target.cards);
+            renderBoard();
+            try {
+              // write spec with transition before board save
+              await writeSpec(sp, COL_STATUS[toCol], null, undefined, fromCol, toCol);
+              await autoSave();
+            } catch (err) {
+              const movedIdx = target.cards.indexOf(card);
+              if (movedIdx > -1) target.cards.splice(movedIdx, 1);
+              card.checked = oldChecked;
+              col.cards.splice(idx, 0, card);
+              if (sp && oldRaw) refreshSpecEntry(sp, oldRaw);
+              renderBoard();
+              markDirty();
+              throw err;
+            }
+            return;
+          }
+        }
+      }
+      function normalizeTag(t) {
+        return t.trim().toUpperCase().replace(/[^A-ZА-Я0-9_+\-]/g, '').replace(/^[-_]+|[-_]+$/g, '');
+      }
+
+      function setupTagPicker(hiddenInput, drop, board) {
+        // combobox-style: field shows "TAG1 • TAG2", dropdown shows all tags with ✓
+        const selectEl = $('#tag-select');
+        const selectVal = $('#tag-select-val');
+        const searchInp = $('#tag-drop-search');
+        const listEl = $('#tag-drop-list');
+        let outsideHandler = null;
+
+        function selectedTags() {
+          return hiddenInput.value.trim().split(/\s+/).filter(Boolean);
+        }
+        function setTags(arr) {
+          hiddenInput.value = arr.filter(Boolean).join(' ');
+          renderVal();
+        }
+        function renderVal() {
+          const tags = selectedTags();
+          if (!tags.length) {
+            selectVal.textContent = '—';
+            selectVal.classList.add('ph');
+          } else if (tags.length === 1) {
+            selectVal.textContent = tags[0];
+            selectVal.classList.remove('ph');
+          } else {
+            selectVal.textContent = tags[0] + ' • ' + tags[1] + (tags.length > 2 ? ' +' + (tags.length - 2) : '');
+            selectVal.classList.remove('ph');
+          }
+        }
+        function renderList(q) {
+          const current = new Set(selectedTags());
+          const all = getTags(board, selectedTags()).filter((t) => !q || t.toUpperCase().includes(q.toUpperCase()));
+          listEl.innerHTML = all.map((t) =>
+            `<div class="tag-drop-item ${current.has(t) ? 'sel' : ''}" data-tag="${esc(t)}" role="option" aria-selected="${current.has(t)}">` +
+            `<span class="chk">${current.has(t) ? '✓' : ''}</span><span>${esc(t)}</span></div>`
+          ).join('');
+          listEl.querySelectorAll('.tag-drop-item').forEach((item) => {
+            item.addEventListener('mousedown', (e) => {
+              e.preventDefault();
+              const tag = item.dataset.tag;
+              const cur = selectedTags();
+              setTags(cur.includes(tag) ? cur.filter((t) => t !== tag) : [...cur, tag]);
+              renderList(searchInp.value);
+            });
+          });
+        }
+        function openDrop() {
+          renderList('');
+          drop.classList.add('open');
+          selectEl.setAttribute('aria-expanded', 'true');
+          setTimeout(() => { searchInp.value = ''; searchInp.focus(); }, 0);
+          outsideHandler = (e) => {
+            const path = e.composedPath ? e.composedPath() : [];
+            if (!path.includes(drop) && !path.includes(selectEl)) closeDrop();
+          };
+          document.addEventListener('mousedown', outsideHandler);
+        }
+        function closeDrop() {
+          drop.classList.remove('open');
+          selectEl.setAttribute('aria-expanded', 'false');
+          if (outsideHandler) { document.removeEventListener('mousedown', outsideHandler); outsideHandler = null; }
+        }
+        function toggleDrop() {
+          drop.classList.contains('open') ? closeDrop() : openDrop();
+        }
+
+        renderVal();
+
+        selectEl.addEventListener('click', toggleDrop);
+        selectEl.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleDrop(); }
+          else if (e.key === 'Escape') closeDrop();
+        });
+        searchInp.addEventListener('input', () => renderList(searchInp.value));
+        searchInp.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape') { closeDrop(); selectEl.focus(); }
+          else if (e.key === 'Enter' && searchInp.value.trim()) {
+            e.preventDefault();
+            const tag = normalizeTag(searchInp.value.trim());
+            if (tag) {
+              const cur = selectedTags();
+              if (!cur.includes(tag)) { setTags([...cur, tag]); addType(tag); }
+              searchInp.value = '';
+              renderList('');
+            }
+          }
+        });
+      }
+
+      function setupSimpleSelect(triggerId, hiddenId, dropId, listId, options) {
+        const triggerEl = $(triggerId), hiddenInput = $(hiddenId), drop = $(dropId), listEl = $(listId);
+        let outsideHandler = null;
+        function renderList() {
+          const cur = hiddenInput.value;
+          listEl.innerHTML = options.map(o =>
+            `<div class="tag-drop-item${o === cur ? ' sel' : ''}" data-val="${esc(o)}" role="option" aria-selected="${o === cur}">` +
+            `<span class="chk">${o === cur ? '✓' : ''}</span><span>${esc(o)}</span></div>`).join('');
+          listEl.querySelectorAll('.tag-drop-item').forEach(item => {
+            item.addEventListener('mousedown', e => {
+              e.preventDefault();
+              hiddenInput.value = item.dataset.val;
+              triggerEl.querySelector('.tag-select-val').textContent = item.dataset.val;
+              closeDrop();
+            });
+          });
+        }
+        function openDrop() {
+          renderList(); drop.classList.add('open'); triggerEl.setAttribute('aria-expanded', 'true');
+          outsideHandler = e => { if (!drop.contains(e.target) && !triggerEl.contains(e.target)) closeDrop(); };
+          document.addEventListener('mousedown', outsideHandler);
+        }
+        function closeDrop() {
+          drop.classList.remove('open'); triggerEl.setAttribute('aria-expanded', 'false');
+          if (outsideHandler) { document.removeEventListener('mousedown', outsideHandler); outsideHandler = null; }
+        }
+        triggerEl.addEventListener('click', () => drop.classList.contains('open') ? closeDrop() : openDrop());
+        triggerEl.addEventListener('keydown', e => {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); drop.classList.contains('open') ? closeDrop() : openDrop(); }
+          else if (e.key === 'Escape') closeDrop();
+        });
+      }
+
+      function openEditor(card, colName, fromHistory = false) {
+        const isNew = !card;
+        S.editing = { card, colName, isNew };
+        // Navigation history management
+        if (card && card.slug) {
+          if (!fromHistory) {
+            if (S.currentNote && S.currentNote !== card.slug) {
+              // Navigated VIA A LINK from another open note — add to history
+              S.navHistory.splice(S.navPos + 1);
+              S.navHistory.push(card.slug);
+              S.navPos = S.navHistory.length - 1;
+            } else {
+              // Fresh open from the board — start a new history
+              S.navHistory = [card.slug];
+              S.navPos = 0;
+            }
+          }
+          S.currentNote = card.slug; // always update (including when fromHistory=true)
+          const btn = $('#btnBack');
+          if (btn) btn.disabled = S.navPos <= 0;
+        }
+        const [type, title] = card ? splitName(cardDisplayName(card)) : ['', ''];
+        const t = card ? card.tags : { created: localNow() };
+        const sp = card ? S.specs.get(card.slug) : null;
+        // fields from the spec as defaults, card.tags takes precedence
+        const ef = {
+          priority: t.priority || (sp && sp.priority) || '',
+          estimate: t.estimate || (sp && sp.estimate) || '',
+          start: t.start || (sp && sp.start) || '',
+          due: t.due || (sp && sp.due) || '',
+        };
+        const createdAt = (sp && sp.createdAt && sp.createdAt !== 'null' && sp.createdAt) || t.created || todayISO();
+        const startedAt = (sp && sp.startedAt && sp.startedAt !== 'null' && sp.startedAt) || ef.start || '';
+        const doneAt = (sp && sp.doneAt && sp.doneAt !== 'null' && sp.doneAt) || t.done || '';
+        $('#drawerTitle').textContent = isNew ? 'New card' : 'Card';
+        $('#cardDelete').classList.toggle('hidden', isNew);
+        $('#drawerBody').innerHTML = `
+    <div class="field"><label>Title</label><textarea id="f_title" rows="2" placeholder="">${esc(title)}</textarea></div>
+    <div class="field"><label>Slug (wikilink target)</label><input id="f_slug" value="${esc(card ? card.slug : '')}" placeholder="auto from name"></div>
+    <div class="grid2">
+      <div class="field"><label>Tag(s)</label>
+        <div class="tag-picker">
+          <div class="tag-select" id="tag-select" tabindex="0" role="combobox" aria-haspopup="listbox" aria-expanded="false">
+            <span class="tag-select-val ph" id="tag-select-val">—</span>
+            <span class="tag-select-arrow">▾</span>
+          </div>
+          <input id="f_type" type="hidden" value="${esc(type)}">
+          <div class="tag-drop" id="tag-drop" role="listbox">
+            <div class="tag-drop-search"><input id="tag-drop-search" placeholder="Search or new tag…" autocomplete="off"></div>
+            <div class="tag-drop-list" id="tag-drop-list"></div>
+          </div>
+        </div></div>
+      <div class="field"><label>Column / status</label>
+        <div class="tag-picker">
+          <input type="hidden" id="f_col" value="${esc(colName)}">
+          <div class="tag-select" id="col-trigger" tabindex="0" role="combobox" aria-haspopup="listbox" aria-expanded="false">
+            <span class="tag-select-val">${esc(colName)}</span>
+            <span class="tag-select-arrow">▾</span>
+          </div>
+          <div class="tag-drop" id="col-drop" role="listbox">
+            <div class="tag-drop-list" id="col-drop-list"></div>
+          </div>
+        </div></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>Priority</label>
+        <div class="tag-picker">
+          <input type="hidden" id="f_pri" value="${esc(ef.priority || '—')}">
+          <div class="tag-select" id="pri-trigger" tabindex="0" role="combobox" aria-haspopup="listbox" aria-expanded="false">
+            <span class="tag-select-val">${esc(ef.priority || '—')}</span>
+            <span class="tag-select-arrow">▾</span>
+          </div>
+          <div class="tag-drop" id="pri-drop" role="listbox">
+            <div class="tag-drop-list" id="pri-drop-list"></div>
+          </div>
+        </div></div>
+      <div class="field"><label>Estimate</label><input id="f_est" value="${esc(ef.estimate)}" placeholder="3h / 2d"></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>Created</label><input id="f_created" class="date-disp" type="text" value="${fmtDate(createdAt)}" disabled title="filled automatically"></div>
+      <div class="field"><label>Deadline</label><div class="date-wrap"><input class="date-disp" type="text" value="${fmtDate(ef.due)}" placeholder="dd.mm.yyyy" readonly><input id="f_due" type="date" value="${ef.due}"></div></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>Start</label><div class="date-wrap"><input class="date-disp" type="text" value="${fmtDate(startedAt)}" placeholder="—" readonly><input id="f_start" type="date" value="${(ef.start || '').split(' ')[0]}"></div></div>
+      <div class="field"><label>Done</label><div class="date-wrap"><input class="date-disp" type="text" value="${fmtDate(doneAt)}" placeholder="—" readonly><input id="f_donedate" type="date" value="${(t.done || '').split(' ')[0]}"></div></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label class="switch"><input type="checkbox" id="f_rec" ${t.recurring ? 'checked' : ''}><span class="track"></span>↺ Recurring</label></div>
+      <div class="field"><label class="switch"><input type="checkbox" id="f_done" ${card && card.checked ? 'checked' : ''}><span class="track"></span>✓ Done</label></div>
+    </div>
+    <div id="f_reminder_wrap" class="field" style="display:none"><label>↺ Schedule</label><select id="f_reminder"><option value="">— none —</option><option value="daily">daily</option><option value="weekly:mon">weekly:mon</option><option value="weekly:tue">weekly:tue</option><option value="weekly:wed">weekly:wed</option><option value="weekly:thu">weekly:thu</option><option value="weekly:fri">weekly:fri</option><option value="weekly:sat">weekly:sat</option><option value="weekly:sun">weekly:sun</option><option value="monthly:1">monthly:1</option><option value="monthly:5">monthly:5</option><option value="monthly:10">monthly:10</option><option value="monthly:15">monthly:15</option><option value="monthly:20">monthly:20</option><option value="monthly:25">monthly:25</option></select></div>
+    <div class="rel" id="rel"></div>`;
+        setupTagPicker($('#f_type'), $('#tag-drop'), S.boards[S.active] && S.boards[S.active].board);
+        setupSimpleSelect('#col-trigger', '#f_col', '#col-drop', '#col-drop-list', COLUMNS);
+        setupSimpleSelect('#pri-trigger', '#f_pri', '#pri-drop', '#pri-drop-list', ['—', 'high', 'medium', 'low']);
+        renderNote(card);
+        renderComments(card);
+        renderRelations(card);
+        // sync the datepicker with the dd.mm.yyyy text display
+        document.querySelectorAll('.date-wrap input[type="date"]').forEach(inp => {
+          inp.addEventListener('change', () => {
+            const disp = inp.previousElementSibling;
+            if (disp) disp.value = fmtDate(inp.value);
+          });
+        });
+        openDrawer();
+        // Init reminder selector from spec reminder field
+        (function() {
+          const sp = S.specs.get(card && card.slug);
+          const rem = sp && sp.reminder;
+          const wrap = $('#f_reminder_wrap');
+          const rec = $('#f_rec');
+          if (rem && rem !== 'null') {
+            rec.checked = true;
+            wrap.style.display = '';
+            const sel = $('#f_reminder');
+            for (let i = 0; i < sel.options.length; i++) {
+              if (sel.options[i].value === rem) { sel.selectedIndex = i; break; }
+            }
+          }
+          rec.addEventListener('change', () => { wrap.style.display = rec.checked ? '' : 'none'; });
+        })();
+        setTimeout(() => $('#f_title').focus(), 60);
+      }
+      // parse the ## Comments / ## Комментарии section from the spec body
+      function parseComments(body) {
+        if (!body) return [];
+        const lines = body.split('\n');
+        let inSec = false;
+        const out = [];
+        for (let i = 0; i < lines.length; i++) {
+          const l = lines[i];
+          if (l.startsWith('## ')) {
+            inSec = /^(?:comments|комментарии)/i.test(l.slice(3).trim());
+            continue;
+          }
+          if (!inSec) continue;
+          if (l.startsWith('## ')) break; // next section
+          const m = l
+            .trim()
+            .match(
+              /^(\d{4}-\d{2}-\d{2}(?:\s+\d{2}:\d{2}(?::\d{2})?)?)\s*\|\s*([^|]+?)\s*\|\s*([\s\S]+)$/,
+            );
+          if (m)
+            out.push({
+              ts: m[1],
+              role: m[2],
+              text: m[3].trim(),
+              lineIndex: i,
+              warn: m[3].includes('!!!ВНИМАНИЕ!!!'),
+            });
+        }
+        return out;
+      }
+      function patchCommentLine(sp, lineIndex, nextText) {
+        if (!sp || typeof lineIndex !== 'number') return null;
+        const bodyLines = sp.body.split('\n');
+        const current = bodyLines[lineIndex] || '';
+        const m = current
+          .trim()
+          .match(
+            /^(\d{4}-\d{2}-\d{2}(?:\s+\d{2}:\d{2}(?::\d{2})?)?)\s*\|\s*([^|]+?)\s*\|\s*([\s\S]+)$/,
+          );
+        if (!m) return null;
+        if (nextText === null) bodyLines.splice(lineIndex, 1);
+        else bodyLines[lineIndex] = `${m[1]} | ${m[2].trim()} | ${String(nextText).trim()}`;
+        const nextBody = bodyLines.join('\n');
+        const bodyAt = sp.raw.indexOf(sp.body);
+        if (bodyAt < 0) return null;
+        return sp.raw.slice(0, bodyAt) + nextBody + sp.raw.slice(bodyAt + sp.body.length);
+      }
+      function showCommentCtxMenu(x, y, card, lineIndex) {
+        closeCtxMenu();
+        const menu = el('div', 'ctx-menu');
+        const editBtn = el('button', '');
+        editBtn.textContent = 'Edit comment';
+        editBtn.onclick = async (e) => {
+          e.stopPropagation();
+          closeCtxMenu();
+          await editComment(card, lineIndex);
+        };
+        menu.appendChild(editBtn);
+        const delBtn = el('button', 'danger');
+        delBtn.textContent = 'Delete comment';
+        delBtn.onclick = async (e) => {
+          e.stopPropagation();
+          closeCtxMenu();
+          await deleteComment(card, lineIndex);
+        };
+        menu.appendChild(delBtn);
+        menu.style.left = x + 'px';
+        menu.style.top = y + 'px';
+        document.body.appendChild(menu);
+        _ctxMenuEl = menu;
+      }
+      async function editComment(card, lineIndex) {
+        const sp = card && S.specs.get(card.slug);
+        if (!sp || !sp.handle) {
+          alert('tasks/ folder not open — saving is not possible.');
+          return;
+        }
+        const current = parseComments(sp.body).find((c) => c.lineIndex === lineIndex);
+        if (!current) return;
+        const node = $(`#commentsList .comment[data-comment-line="${lineIndex}"]`);
+        const textEl = node && node.querySelector('.comment-text');
+        if (!node || !textEl) return; // list re-rendered since the menu opened — nothing to edit inline
+        const ta = el('textarea', 'comment-edit-ta');
+        ta.value = current.text;
+        const actions = el('div', 'comment-edit-actions');
+        const cancelBtn = el('button', 'ghost');
+        cancelBtn.type = 'button';
+        cancelBtn.textContent = 'Cancel';
+        const saveBtn = el('button', 'primary');
+        saveBtn.type = 'button';
+        saveBtn.textContent = 'Save';
+        actions.append(cancelBtn, saveBtn);
+        textEl.replaceWith(ta);
+        ta.insertAdjacentElement('afterend', actions);
+        ta.focus();
+        ta.setSelectionRange(ta.value.length, ta.value.length);
+        const finish = () => renderComments(card);
+        cancelBtn.onclick = (e) => { e.stopPropagation(); finish(); };
+        saveBtn.onclick = async (e) => {
+          e.stopPropagation();
+          const next = ta.value.trim();
+          if (!next || next === current.text) { finish(); return; }
+          const raw = patchCommentLine(sp, lineIndex, next);
+          if (!raw) { finish(); return; }
+          await writeRawSpec(sp, raw);
+          renderComments(card);
+        };
+        ta.addEventListener('keydown', (e) => {
+          e.stopPropagation();
+          if (e.key === 'Escape') { e.preventDefault(); finish(); }
+          else if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); saveBtn.onclick(e); }
+        });
+      }
+      async function deleteComment(card, lineIndex) {
+        const sp = card && S.specs.get(card.slug);
+        if (!sp || !sp.handle) {
+          alert('tasks/ folder not open — saving is not possible.');
+          return;
+        }
+        const current = parseComments(sp.body).find((c) => c.lineIndex === lineIndex);
+        if (!current || !confirm('Delete this comment?')) return;
+        const raw = patchCommentLine(sp, lineIndex, null);
+        if (!raw) return;
+        await writeRawSpec(sp, raw);
+        renderComments(card);
+      }
+      // render the comments panel
+      function renderComments(card) {
+        const list = $('#commentsList');
+        const count = $('#commentsCount');
+        if (!list) return;
+        if (!card) {
+          list.innerHTML = '';
+          if (count) count.textContent = '0';
+          return;
+        }
+        const sp = S.specs.get(card.slug);
+        const comments = sp ? parseComments(sp.body) : [];
+        if (count) count.textContent = String(comments.length);
+        const sorted = [...comments].sort((a, b) => b.ts.localeCompare(a.ts));
+        list.innerHTML = sorted.length
+          ? sorted
+              .map((c) => {
+                const display = c.text
+                  .replace('!!!ВНИМАНИЕ!!! ', '')
+                  .replace('!!!ВНИМАНИЕ!!!', '');
+                return `<div class="comment${c.warn ? ' warn' : ''}" data-comment-line="${c.lineIndex}">
+          <div class="comment-meta">${c.warn ? '◬ ' : ''}<b>${esc(c.role)}</b> · <b>${esc(fmtDate(c.ts))}</b></div>
+          <div class="comment-text">${mdInline(display)}</div>
+        </div>`;
+              })
+              .join('')
+          : `<div class="no-comments">no comments</div>`;
+        // wikilinks in comments — wire up handlers
+        list
+          .querySelectorAll('[data-j]')
+          .forEach((e) => (e.onclick = () => jumpTo(e.dataset.j)));
+        list
+          .querySelectorAll('[data-file]:not([data-attach])')
+          .forEach((e) => (e.onclick = (ev) => { ev.stopPropagation(); openContainingFolder(e.dataset.file); }));
+        list
+          .querySelectorAll('.wl-file[data-attach]')
+          .forEach((e) => (e.onclick = (ev) => { ev.stopPropagation(); openAttachmentFile(e.dataset.attach, e.dataset.file); }));
+        list.querySelectorAll('.comment[data-comment-line]').forEach((node) => {
+          node.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            showCommentCtxMenu(e.clientX, e.clientY, card, Number(node.dataset.commentLine));
+          });
+        });
+        // resolve inline previews for our own attachments/<slug>/<file> images (async, best-effort)
+        list.querySelectorAll('img.comment-img[data-attach]').forEach(async (img) => {
+          if (!S.dirHandle) return;
+          const relPath = img.dataset.attach;
+          const parts = relPath.split('/').filter(Boolean); // attachments/<slug>/<file>
+          try {
+            let dir = S.dirHandle;
+            for (let i = 0; i < parts.length - 1; i++) {
+              dir = await dir.getDirectoryHandle(parts[i]);
+            }
+            const fh = await dir.getFileHandle(parts[parts.length - 1]);
+            const file = await fh.getFile();
+            const url = URL.createObjectURL(file);
+            img.dataset.objurl = url;
+            img.src = url;
+            img.onclick = () => window.open(url, '_blank');
+          } catch (e) {
+            // file not found / no access — leave the alt text visible, no broken-image icon
+          }
+        });
+        // add button
+        const ta = $('#commentText'),
+          btn = $('#commentSubmit');
+        if (!ta || !btn) return;
+        const warnCb = $('#warnToggle');
+        if (warnCb)
+          warnCb.onchange = () =>
+            $('#warnToggleLabel').classList.toggle('active', warnCb.checked);
+        btn.onclick = async () => {
+          const text = ta.value.trim();
+          if (!text) return;
+          if (!sp || !sp.handle) {
+            alert('tasks/ folder not open — saving is not possible.');
+            return;
+          }
+          const now = localNow();
+          const prefix = warnCb && warnCb.checked ? '!!!ВНИМАНИЕ!!! ' : '';
+          const entry = `${now} | user | ${prefix}${text}`;
+          let raw = sp.raw.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+          const secRe = /^## (?:Comments|Комментарии)[ \t]*$/m;
+          if (secRe.test(raw)) {
+            // insert at the start of the section (right after the header) — newest first
+            const secIdx = raw.search(secRe);
+            const afterHdr = secIdx + raw.slice(secIdx).indexOf('\n') + 1;
+            raw = raw.slice(0, afterHdr) + entry + '\n' + raw.slice(afterHdr);
+          } else {
+            raw = raw.trimEnd() + '\n\n## Comments\n\n' + entry + '\n';
+          }
+          await writeRawSpec(sp, raw);
+          ta.value = '';
+          if (warnCb) {
+            warnCb.checked = false;
+            $('#warnToggleLabel').classList.remove('active');
+          }
+          renderComments(card);
+        };
+        ta.onpaste = async (ev) => {
+          if (!sp || !sp.handle || !S.dirHandle) return; // plain text paste proceeds natively
+          const items = Array.from(ev.clipboardData?.items || []);
+          const fileItems = items.filter((it) => it.kind === 'file');
+          if (!fileItems.length) return; // no files — let the default text paste happen
+          ev.preventDefault();
+          for (const it of fileItems) {
+            const file = it.getAsFile();
+            if (!file) continue;
+            try {
+              const relPath = await saveAttachment(file, card.slug);
+              const name = relPath.split('/').pop();
+              const isImg = file.type.startsWith('image/');
+              const md = isImg ? `![${name}](${relPath})` : `[${name}](${relPath})`;
+              insertAtCursor(ta, md);
+            } catch (err) {
+              alert('Failed to save attachment: ' + err.message);
+            }
+          }
+        };
+      }
+      function noteDisplayBody(md) {
+        const lines = md.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+        const out = [];
+        let skip = false;
+        for (const line of lines) {
+          if (/^##\s+(?:Comments|Комментарии)\s*$/.test(line.trim())) {
+            skip = true;
+            continue;
+          }
+          if (skip && /^##\s+/.test(line.trim())) skip = false;
+          if (!skip) out.push(line);
+        }
+        return out.join('\n').trim();
+      }
+      // note content in a separate panel (read-only, without service sections)
+      function renderNote(card) {
+        const box = $('#note');
+        if (!card) {
+          box.innerHTML = '';
+          return;
+        }
+        const sp = S.specs.get(card.slug);
+        if (!sp) {
+          box.innerHTML = `<div class="empty">File specs/${esc(card.slug)}.md not open — open the tasks/ folder to view content.</div>`;
+          return;
+        }
+        if (!sp.body || !sp.body.trim()) {
+          box.innerHTML = `<div class="empty">Note has no body.</div>`;
+          return;
+        }
+        // header: for artifacts — tags + status + linkedTask; for specs — the author
+        let metaBar = '';
+        if (sp.artifact || sp.itemType === 'artifact') {
+          const tagBadges = (sp.artifactTags || [])
+            .map((t) => `<span class="art-tag">${esc(t)}</span>`)
+            .join('');
+          const statusBadge = sp.status
+            ? `<span class="art-status ${sp.status === 'actual' ? 'ok' : ''}">${esc(sp.status)}</span>`
+            : '';
+          // related task (that created the artifact)
+          const linked = sp.linkedTask
+            ? `<div class="art-linked">→ created in: <span class="wl" data-j="${esc(sp.linkedTask)}">[[${esc(sp.linkedTask)}]]</span></div>`
+            : '';
+          // all mentions of the artifact in other specs (backlinks)
+          const backlinks = [];
+          S.specs.forEach((v, k) => {
+            if (k !== card.slug && v.links && v.links.includes(card.slug))
+              backlinks.push(k);
+          });
+          const backlinkHtml = backlinks.length
+            ? `<div class="art-linked">← mentioned in: ${backlinks.map((s) => `<span class="wl" data-j="${esc(s)}">[[${esc(s)}]]</span>`).join(' ')}</div>`
+            : '';
+          metaBar = `<div class="art-meta">${statusBadge}${tagBadges}</div>${linked}${backlinkHtml}`;
+        } else {
+          const np = [];
+          if (sp.owner) np.push(`@ ${esc(sp.owner)}`);
+          if (sp.status) np.push(`◈ ${esc(sp.status)}`);
+          const notePri = sp.priority || (card.tags && card.tags.priority);
+          if (notePri === 'high') np.push('● high');
+          else if (notePri === 'medium') np.push('◐ medium');
+          else if (notePri === 'low') np.push('○ low');
+          if (card.tags && card.tags.done) np.push(`✓ ${esc(fmtDate(card.tags.done))}`);
+          metaBar = np.length
+            ? `<div class="note-owner">${np.join(' · ')}</div>`
+            : '';
+        }
+        box.innerHTML = metaBar + `<div class="md">${mdToHtml(noteDisplayBody(sp.body))}</div>`;
+        box
+          .querySelectorAll('[data-j]')
+          .forEach((e) => (e.onclick = () => jumpTo(e.dataset.j)));
+        box
+          .querySelectorAll('[data-file]')
+          .forEach((e) => (e.onclick = (ev) => { ev.stopPropagation(); openContainingFolder(e.dataset.file); }));
+      }
+      // open only the note-panel without the drawer (for artifacts without a card)
+      function peekNote(slug, fromJump = false, fromHistory = false) {
+        const sp = S.specs.get(slug);
+        if (!sp) return;
+        const fakeCard = { slug, name: slug, tags: {}, checked: false };
+
+        // Navigation history management
+        if (fromHistory) {
+          // Returning via history — navPos was already updated in btnBack.onclick, don't touch history
+        } else if (fromJump && S.currentNote && S.currentNote !== slug) {
+          // Navigated via a link FROM another open note — add to history
+          S.navHistory.splice(S.navPos + 1);
+          S.navHistory.push(slug);
+          S.navPos = S.navHistory.length - 1;
+        } else if (!fromJump && S.currentNote !== slug) {
+          // Opening another note FOR THE FIRST TIME (fresh open) — start a new history
+          S.navHistory = [slug];
+          S.navPos = 0;
+        }
+
+        // Update the "Back" button state
+        const btn = $('#btnBack');
+        if (btn) btn.disabled = S.navPos <= 0;
+
+        // Remember the currently open note
+        S.currentNote = slug;
+
+        renderNote(fakeCard);
+        renderComments(fakeCard);
+        $('#notePanel').classList.add('open');
+        $('#scrim').classList.add('open');
+        // mobile "note only" mode: the "Card" tab is hidden (editor not open)
+        document.body.classList.add('panels-open');
+        const ct = document.querySelector('#mtabs button[data-mtab="card"]');
+        if (ct) ct.classList.add('hidden');
+        if (!document.body.classList.contains('mtab-comments')) setMTab('note');
+        S.editing = null;
+      }
+      function mdInline(t) {
+        t = esc(t);
+        t = t.replace(
+          /!\[([^\]]*)\]\(([^)]+)\)/g,
+          (m, a, u) =>
+            u.startsWith('attachments/')
+              ? `<img class="comment-img" data-attach="${u}" alt="${a || 'image'}" loading="lazy">`
+              : `<span class="md-img">⊞ ${a || 'image'}</span>`,
+        ); // images — our own attachments/ get a real inline preview, external URLs stay a placeholder
+        t = t.replace(
+          /\[([^\]]+)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g,
+          (m, x, u) =>
+            u.startsWith('attachments/')
+              ? `<span class="wl wl-file" data-attach="${u}" data-file="${u.split('/').pop()}">📎 ${x}</span>`
+              : `<a href="${u}" target="_blank" rel="noopener">${x}</a>`,
+        ); // links [text](url) — our own attachments/<slug>/<file> paths are resolved via S.dirHandle and opened directly (data-attach); data-file stays as a fallback for openContainingFolder
+        t = t.replace(/`([^`]+)`/g, '<code>$1</code>');
+        t = t
+          .replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>')
+          .replace(/(^|[^*\w])\*([^*]+)\*/g, '$1<i>$2</i>')
+          .replace(/(^|[^_\w])_([^_]+)_/g, '$1<i>$2</i>');
+        t = t.replace(/(^|[\s(])(https?:\/\/[^\s)<]+)/g, (m, pre, url) => {
+          // autolinks
+          const tail = (url.match(/[.,;:!?]+$/) || [''])[0];
+          if (tail) url = url.slice(0, -tail.length);
+          return `${pre}<a href="${url}" target="_blank" rel="noopener">${url}</a>${tail}`;
+        });
+        t = t.replace(
+          /\[\[([^\]|]+)(?:\|([^\]]*))?\]\]/g,
+          (m, s, n) =>
+            s.endsWith('.md') || !s.includes('.')
+              ? `<span class="wl" data-j="${esc(s)}">[[${esc(n || s)}]]</span>`
+              : `<span class="wl wl-file" data-file="${esc(s)}">[[${esc(n || s)}]]</span>`,
+        ); // wikilinks — .md/slugs are clickable (data-j), other files open the folder (data-file)
+        return t;
+      }
+      function splitRow(l) {
+        return l
+          .trim()
+          .replace(/^\|/, '')
+          .replace(/\|$/, '')
+          .split('|')
+          .map((s) => s.trim());
+      }
+      function mdToHtml(md) {
+        md = md.replace(/<!--[\s\S]*?-->/g, ''); // strip HTML comments (template instructions)
+        const L = md.replace(/\r/g, '').split('\n');
+        let html = '',
+          i = 0;
+        while (i < L.length) {
+          const l = L[i];
+          // GFM table: a row with | followed by a separator row
+          if (
+            /^\s*\|.*\|\s*$/.test(l) &&
+            i + 1 < L.length &&
+            /^\s*\|?[\s:|-]*-[\s:|-]*\|?\s*$/.test(L[i + 1])
+          ) {
+            const head = splitRow(l);
+            i += 2;
+            const rows = [];
+            while (i < L.length && L[i].includes('|') && L[i].trim()) {
+              rows.push(splitRow(L[i]));
+              i++;
+            }
+            html +=
+              `<table><thead><tr>${head.map((c) => `<th>${mdInline(c)}</th>`).join('')}</tr></thead><tbody>` +
+              rows
+                .map(
+                  (r) =>
+                    `<tr>${r.map((c) => `<td>${mdInline(c)}</td>`).join('')}</tr>`,
+                )
+                .join('') +
+              `</tbody></table>`;
+            continue;
+          }
+          let m = l.match(/^(#{1,6})\s+(.*)$/);
+          if (m) {
+            html += `<h4>${mdInline(m[2])}</h4>`;
+            i++;
+            continue;
+          }
+          if (/^\s*([-*_])\1{2,}\s*$/.test(l)) {
+            html += '<hr>';
+            i++;
+            continue;
+          } // horizontal rule
+          if (/^\s*>\s?/.test(l)) {
+            const q = [];
+            while (i < L.length && /^\s*>\s?/.test(L[i])) {
+              q.push(L[i].replace(/^\s*>\s?/, ''));
+              i++;
+            }
+            html += `<blockquote>${mdInline(q.join(' '))}</blockquote>`;
+            continue;
+          }
+          // lists: checkboxes / bulleted / numbered (consecutive)
+          if (/^\s*(- \[[ x]\]|[-*+]\s|\d+[.)]\s)/.test(l)) {
+            const items = [];
+            while (i < L.length) {
+              const li = L[i];
+              const cb = li.match(/^\s*- \[( |x)\]\s*(.*)$/);
+              const ol = li.match(/^\s*\d+[.)]\s+(.*)$/);
+              const ul = li.match(/^\s*[-*+]\s+(.*)$/);
+              if (cb)
+                items.push(
+                  `<div class="md-ck ${cb[1] === 'x' ? 'on' : ''}">${mdInline(cb[2])}</div>`,
+                );
+              else if (ol)
+                items.push(`<div class="md-li ol">${mdInline(ol[1])}</div>`);
+              else if (ul)
+                items.push(`<div class="md-li">${mdInline(ul[1])}</div>`);
+              else break;
+              i++;
+            }
+            html += `<div class="md-list">${items.join('')}</div>`;
+            continue;
+          }
+          if (!l.trim()) {
+            i++;
+            continue;
+          }
+          // fenced code block: ```[lang] … ``` or ~~~[lang] … ~~~
+          if (/^\s*(`{3}|~{3})/.test(l)) {
+            const fence = l.match(/^\s*(`{3}|~{3})/)[1];
+            i++;
+            const lines = [];
+            while (i < L.length && !L[i].trimStart().startsWith(fence)) {
+              lines.push(L[i]);
+              i++;
+            }
+            i++; // skip the closing fence
+            const escaped = lines
+              .join('\n')
+              .replace(/&/g, '&amp;')
+              .replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;');
+            html += `<pre><code>${escaped}</code></pre>`;
+            continue;
+          }
+          // paragraph: up to a blank line or the start of a block element
+          const para = [l];
+          i++;
+          while (
+            i < L.length &&
+            L[i].trim() &&
+            !/^\s*(`{3}|~{3}|#{1,6}\s|>|\||[-*+]\s|\d+[.)]\s|- \[)/.test(
+              L[i],
+            ) &&
+            !/^\s*([-*_])\1{2,}\s*$/.test(L[i])
+          ) {
+            para.push(L[i]);
+            i++;
+          }
+          // preserve line breaks (change history); bold the leading date of log lines
+          const histDate = (s) =>
+            s.replace(
+              /^(\d{4}-\d{2}-\d{2}(?: \d{2}:\d{2}(?::\d{2})?)?)(\s*\|)/,
+              '**$1**$2',
+            );
+          html += `<p>${para.map((l) => mdInline(histDate(l))).join('<br>')}</p>`;
+        }
+        return html;
+      }
+      function renderRelations(card) {
+        const box = $('#rel');
+        if (!card) {
+          box.innerHTML = '';
+          return;
+        }
+        const sp = S.specs.get(card.slug);
+        let html = '';
+        const list = (label, arr) => {
+          html += `<h3>${label}</h3>`;
+          html +=
+            arr && arr.length
+              ? `<div class="links">${arr.map((s) => `<span class="wl" data-j="${esc(s)}">[[${esc(s)}]]</span>`).join('')}</div>`
+              : `<div class="empty">—</div>`;
+        };
+        const backlinks = [];
+        S.specs.forEach((v, k) => {
+          if (k === card.slug || !v.links.includes(card.slug)) return;
+          if (blockingLinks(v).includes(card.slug)) return; // already shown by Depends on/Blocks
+          backlinks.push(k);
+        });
+        if (sp) {
+          if (sp.itemType === 'artifact') {
+            list('Linked task', sp.linkedTask ? [sp.linkedTask] : []);
+          } else {
+            list('Depends on', sp.deps);
+            list('Blocks', sp.blocks);
+            const artLinks = [...new Set((sp.links || []).filter(l => { const r = S.specs.get(l); return r && (r.artifact || r.itemType === 'artifact'); }))];
+            const mentions = uniqueLinks([...(sp.related || []), ...(sp.mentions || []), ...backlinks])
+              .filter((l) => !artLinks.includes(l));
+            list('Mentions', mentions);
+          }
+        } else
+          html += `<h3>Spec</h3><div class="empty">file specs/${esc(card.slug)}.md not open</div>`;
+        box.innerHTML = html;
+        box
+          .querySelectorAll('[data-j]')
+          .forEach((e) => (e.onclick = () => jumpTo(e.dataset.j)));
+      }
+      async function applyEditor() {
+        const e = S.editing;
+        if (!e) return;
+        const title = $('#f_title').value.replace(/\s+/g, ' ').trim();
+        if (!title) {
+          $('#f_title').focus();
+          return;
+        }
+        let type = $('#f_type').value.trim().split(/\s+/).filter(Boolean).join(' ');
+        if (type === '__new__') type = '';
+        const name = type ? type + ': ' + title : title;
+        let slug = $('#f_slug').value.trim() || slugify(title);
+        const tags = {};
+        const crEl = $('#f_created');
+        // For new cards we take localNow() (date+time) — grabDT can read both formats.
+        // The disabled input holds fmtDate(localNow()); parseDisplayDate isn't used for isNew.
+        const cr = e.isNew ? localNow() : (crEl ? parseDisplayDate(crEl.value) || crEl.value : '');
+        if (cr) tags.created = cr;
+        const st = $('#f_start').value;
+        if (st) tags.start = st;
+        const du = $('#f_due').value;
+        if (du) tags.due = du;
+        const es = $('#f_est').value.trim();
+        if (es) tags.estimate = es;
+        const pr = $('#f_pri').value;
+        if (pr === 'high' || pr === 'medium' || pr === 'low')
+          tags.priority = pr;
+        if ($('#f_rec').checked) tags.recurring = true;
+        const reminderVal = $('#f_rec').checked ? ($('#f_reminder').value || null) : null;
+        const dd = $('#f_donedate').value;
+        if (dd) {
+          const origTime = (!e.isNew && e.card.tags.done || '').split(' ')[1] || '';
+          tags.done = origTime ? dd + ' ' + origTime : dd;
+        }
+        const checked = $('#f_done').checked,
+          toCol = $('#f_col').value,
+          b = S.boards[S.active];
+        let newCard = null;
+        if (e.isNew) {
+          newCard = { checked, slug, name, tags };
+          b.board.columns.find((c) => c.name === toCol).cards.push(newCard);
+        } else {
+          e.card.name = name;
+          e.card.slug = slug;
+          e.card.tags = tags;
+          e.card.checked = checked;
+          if (toCol !== e.colName) {
+            const from = b.board.columns.find((c) => c.name === e.colName);
+            const target = b.board.columns.find((c) => c.name === toCol);
+            if (from && target) {
+              const idx = from.cards.indexOf(e.card);
+              if (idx > -1) target.cards.push(from.cards.splice(idx, 1)[0]);
+            }
+          }
+        }
+        // optimistic render: UI update immediately, file writes in background
+        renderBoard();
+        closeDrawer();
+        // targeted save: only the board + the affected card's spec (no need to iterate all)
+        if (S.dirHandle && b && b.handle) {
+          try {
+            if (e.isNew) await writeNewTaskSpec(b.name, slug, name, COL_STATUS[toCol], tags);
+            else await writeSpec(S.specs.get(slug), COL_STATUS[toCol], tags.priority || null, reminderVal, e.colName, toCol);
+            const w = await b.handle.createWritable();
+            await w.write(serializeBoard(b.board));
+            await w.close();
+            b.dirty = false;
+            $('#dirty').classList.add('hidden');
+            flash('Saved to file');
+          } catch (err) {
+            markDirty();
+            flashMsg('◬ Save error: ' + (err && err.message || String(err)), 5000);
+          }
+        } else {
+          markDirty();
+        }
+        // After creating a new card, offer a 5s toast with a link to open it.
+        // Reuse jumpTo() — the same proven navigation used for [[wikilinks]] —
+        // instead of calling openEditor directly: it re-resolves the card by
+        // slug via findCard() (correct even if the board list changed since
+        // creation) and switches S.active to the right board first, so the
+        // link always opens the standard card view with its full content.
+        if (e.isNew && newCard) {
+          flashMsg('✓ Card created', 5000, {
+            label: 'Open',
+            onClick: () => jumpTo(slug),
+          });
+        }
+      }
+      async function deleteCard() {
+        const e = S.editing;
+        if (!e || e.isNew) return;
+        if (!confirm(`Delete card "${e.card.name}"?`)) return;
+        const b = S.boards[S.active];
+        let removedCol = null, removedIdx = -1;
+        for (const col of b.board.columns) {
+          const i = col.cards.indexOf(e.card);
+          if (i > -1) { removedCol = col; removedIdx = i; col.cards.splice(i, 1); break; }
+        }
+        renderBoard();   // optimistic — UI updates immediately
+        closeDrawer();
+        autoSave().catch((err) => {
+          if (removedCol) removedCol.cards.splice(removedIdx, 0, e.card);
+          renderBoard();
+          flashMsg('◬ Delete error: ' + (err && err.message || err), 5000);
+        });
+      }
+      function esc(s) {
+        return (s || '').replace(
+          /[&<>"]/g,
+          (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[m],
+        );
+      }
+      // mobile tabs: switch the active area (note/comments/card)
+      function setMTab(tab) {
+        document.body.classList.remove(
+          'mtab-note',
+          'mtab-comments',
+          'mtab-card',
+        );
+        document.body.classList.add('mtab-' + tab);
+        document
+          .querySelectorAll('#mtabs button[data-mtab]')
+          .forEach((b) => b.classList.toggle('active', b.dataset.mtab === tab));
+      }
+      function openDrawer() {
+        const isNew = S.editing && S.editing.isNew;
+        $('#drawer').classList.add('open');
+        // A brand-new card has no comments/note yet — hide #notePanel so the
+        // New-card view is just the editor form (Comments/Note content sections
+        // are meaningless for a task that doesn't exist yet).
+        $('#notePanel').classList.toggle('open', !isNew);
+        $('#scrim').classList.add('open');
+        document.body.classList.add('panels-open');
+        // the "Card" tab becomes available (editor is open)
+        const ct = document.querySelector('#mtabs button[data-mtab="card"]');
+        if (ct) ct.classList.remove('hidden');
+        // default: a card without a spec (or a new one) → editor; with a spec → read the note
+        const _hasSpec = S.editing && !S.editing.isNew && S.specs.has(S.editing.card && S.editing.card.slug);
+        setMTab(_hasSpec ? 'note' : 'card');
+      }
+      function closeDrawer() {
+        // Clear history when the note panel closes
+        S.navHistory = [];
+        S.navPos = -1;
+        S.currentNote = null;
+        const btn = $('#btnBack');
+        if (btn) btn.disabled = true;
+        $('#drawer').classList.remove('open');
+        $('#notePanel').classList.remove('open');
+        $('#scrim').classList.remove('open');
+        document.body.classList.remove(
+          'panels-open',
+          'mtab-note',
+          'mtab-comments',
+          'mtab-card',
+        );
+        S.editing = null;
+      }
+
+      function renderWorkflowMap() {
+        const map = $('#workflowMap');
+        if (!map) return;
+        const cards = WORKFLOW_STAGES.map((stage) => {
+          const exits = stage.exits.length
+            ? stage.exits.map((x) => `<span class="workflow-edge">${esc(x)}</span>`).join('')
+            : '<span class="workflow-edge">terminal</span>';
+          return `<article class="workflow-node ${stage.tone || ''}">` +
+            `<h3>${esc(stage.col)}</h3>` +
+            `<div class="workflow-role">${esc(stage.role)}</div>` +
+            `<div class="workflow-gate">${esc(stage.gate)}</div>` +
+            `<div class="workflow-exits">${exits}</div>` +
+            `</article>`;
+        });
+        map.innerHTML = `<div class="workflow-grid">${cards.join('')}</div>`;
+      }
+
+      function openWorkflowMap() {
+        renderWorkflowMap();
+        $('#workflowModal').classList.add('open');
+        $('#scrim').classList.add('open');
+      }
+
+      function closeWorkflowMap() {
+        $('#workflowModal').classList.remove('open');
+        if (!$('#drawer').classList.contains('open') && !$('#notePanel').classList.contains('open')) {
+          $('#scrim').classList.remove('open');
+        }
+      }
+
+      function closeDragState() {
+        S.dragActive = false;
+        $('#columns')?.classList.remove('drag-in-progress');
+        document.querySelectorAll('.card.dragging').forEach((c) => c.classList.remove('dragging'));
+        document.querySelectorAll('.drop.over').forEach((d) => d.classList.remove('over'));
+      }
+
+      function closeTransientUi() {
+        closeCtxMenu();
+        closeWorkflowMap();
+        closeDrawer();
+        closeDragState();
+      }
+
+      function handleGlobalKeydown(e) {
+        if (e.key === 'Escape') closeTransientUi();
+        if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+          e.preventDefault();
+          save();
+        }
+      }
+
+
+      /* ════════════ EVENTS ════════════ */
+      document.addEventListener('click', closeCtxMenu);
+      document.addEventListener('keydown', handleGlobalKeydown);
+      window.addEventListener('scroll', closeCtxMenu, { capture: true, passive: true });
+      $('#openDir').onclick = openDir;
+      $('#newBoard').onclick = newBoard;
+      attachProjectNameMenu();
+      $('#btnBack').onclick = () => {
+        if (S.navPos > 0 && S.navHistory.length > 0) {
+          S.navPos--;
+          const slug = S.navHistory[S.navPos];
+          const btn = $('#btnBack');
+          if (btn) btn.disabled = S.navPos <= 0;
+          const found = findCard(slug);
+          if (found) {
+            openEditor(found.card, found.col, true);
+          } // card from the board — restore the editor
+          else if (S.specs.has(slug)) {
+            peekNote(slug, false, true);
+          } // spec only — note+comments
+        }
+      };
+      $('#cardSave').onclick = applyEditor;
+      $('#cardCancel').onclick = closeDrawer;
+      $('#cardDelete').onclick = deleteCard;
+      $('#drawerClose').onclick = closeDrawer;
+      $('#workflowTrigger').onclick = openWorkflowMap;
+      $('#workflowClose').onclick = closeWorkflowMap;
+      $('#scrim').onclick = closeTransientUi;
+      document
+        .querySelectorAll('#mtabs button[data-mtab]')
+        .forEach((b) => (b.onclick = () => setMTab(b.dataset.mtab)));
+      $('#mClose').onclick = closeDrawer;
+      $('#search').oninput = (e) => {
+        S.filter = e.target.value;
+        renderBoard();
+      };
+      // Filter preset dropdown
+      (function () {
+        const drop = $('#filterDrop');
+        const inp = $('#search');
+        const chip = $('#artifactFilterChip');
+        const priorityGroup = $('#filterPriorityGroup');
+        const artifactGroup = $('#filterArtifactGroup');
+
+        function applyPreset(value) {
+          inp.value = value;
+          S.filter = value;
+          renderBoard();
+          drop.classList.remove('open');
+        }
+        function updateFilterUi() {
+          const artifactMode = S.viewMode === 'artifacts';
+          drop.classList.toggle('artifact-mode', artifactMode);
+          if (priorityGroup) priorityGroup.classList.toggle('hidden', artifactMode);
+          if (artifactGroup) artifactGroup.classList.toggle('hidden', !artifactMode);
+          drop.querySelectorAll('[data-artifact-page-filter]').forEach((btn) => {
+            btn.classList.toggle('active', btn.dataset.artifactPageFilter === S.artifactPageFilter);
+          });
+          inp.placeholder = artifactMode ? 'Filter artifacts' : 'Filter';
+          if (chip) {
+            const labels = { openable: 'Readable', missing: 'Other' };
+            chip.textContent = artifactMode ? (labels[S.artifactPageFilter] || '') : '';
+            chip.classList.toggle('show', artifactMode && S.artifactPageFilter !== 'all');
+          }
+        }
+        function applyArtifactPageFilter(value) {
+          S.artifactPageFilter = value || 'all';
+          updateFilterUi();
+          renderBoard();
+          drop.classList.remove('open');
+        }
+
+        function rebuildTagGroup() {
+          const grp = $('#filterTagGroup');
+          if (!grp) return;
+          if (S.viewMode === 'artifacts') { grp.innerHTML = ''; return; }
+          const board = S.boards[S.active] && S.boards[S.active].board;
+          const tags = board ? getTags(board) : [];
+          if (!tags.length) { grp.innerHTML = ''; return; }
+          grp.innerHTML = '<div class="filter-drop-label">Tags</div>' +
+            tags.map(t => `<button class="filter-preset" data-tag="${t}">${t}</button>`).join('');
+          grp.querySelectorAll('.filter-preset').forEach(btn =>
+            btn.addEventListener('mousedown', e => { e.preventDefault(); applyPreset(btn.dataset.tag); })
+          );
+        }
+
+        inp.addEventListener('focus', () => { updateFilterUi(); rebuildTagGroup(); drop.classList.add('open'); });
+        inp.addEventListener('blur', () => setTimeout(() => drop.classList.remove('open'), 150));
+        drop.querySelectorAll('.filter-preset').forEach(btn => {
+          btn.addEventListener('mousedown', e => {
+            e.preventDefault(); // keep focus on input, avoid blur firing first
+            if (btn.dataset.artifactPageFilter) applyArtifactPageFilter(btn.dataset.artifactPageFilter);
+            else if (btn.dataset.filter) applyPreset(btn.dataset.filter);
+          });
+        });
+        window.updateFilterUi = updateFilterUi;
+        updateFilterUi();
+      })();
+      (function () {
+        const trigger = $('#boardArtifactsTrigger');
+        if (!trigger) return;
+        trigger.onclick = () => {
+          S.viewMode = S.viewMode === 'artifacts' ? 'board' : 'artifacts';
+          if (window.updateFilterUi) window.updateFilterUi();
+          renderBoard();
+        };
+      })();
+      // View options dropdown: see VIEW_OPTIONS config at top of script
+      function buildViewPop() {
+        const pop = $('#viewPop');
+        pop.innerHTML = '';
+        let lastGroup = null;
+        VIEW_OPTIONS.forEach((o) => {
+          if (o.group !== lastGroup) {
+            const g = el('div', 'vp-group');
+            g.textContent = o.group;
+            pop.appendChild(g);
+            lastGroup = o.group;
+          }
+          const sw = el('label', 'switch');
+          const cb = el('input');
+          cb.type = 'checkbox';
+          cb.checked = !!S.settings[o.key];
+          cb.onchange = () => {
+            S.settings[o.key] = cb.checked;
+            saveSettings();
+            renderBoard();
+          };
+          const track = el('span', 'track');
+          sw.appendChild(cb);
+          sw.appendChild(track);
+          sw.appendChild(document.createTextNode(o.label));
+          pop.appendChild(sw);
+        });
+      }
+      buildViewPop();
+      $('#viewTrigger').onclick = (e) => {
+        e.stopPropagation();
+        const pop = $('#viewPop');
+        const opening = pop.classList.contains('hidden');
+        if (opening) buildViewPop(); // reflect the current values every time it opens
+        pop.classList.toggle('hidden');
+        $('#viewTrigger').classList.toggle(
+          'on',
+          !pop.classList.contains('hidden'),
+        );
+      };
+      document.addEventListener('click', (e) => {
+        // click outside the popover — close it
+        const pop = $('#viewPop');
+        if (pop.classList.contains('hidden')) return;
+        if (!pop.contains(e.target) && e.target !== $('#viewTrigger')) {
+          pop.classList.add('hidden');
+          $('#viewTrigger').classList.remove('on');
+        }
+      });
+      $('#theme').onclick = () => {
+        document.documentElement.dataset.theme =
+          document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+        localStorage.setItem('kanban:theme', document.documentElement.dataset.theme);
+      };
+      document.addEventListener('dragstart', () => {
+        S.dragActive = true;
+        // Showing empty columns is deferred to the next frame. Adding
+        // drag-in-progress synchronously in dragstart makes empty columns to the
+        // LEFT of the source appear instantly and push it right — the browser
+        // loses the drag source and cancels the drag (every column except the
+        // leftmost BACKLOG was affected). By the next frame the drag is already
+        // locked in by the browser, and the layout shift no longer interrupts it.
+        requestAnimationFrame(() => {
+          if (!S.dragActive) return;
+          const cols = $('#columns');
+          if (!cols) return;
+          // Compensate for the shift: remember the grabbed card's position, then
+          // adjust scrollLeft so it stays under the cursor
+          // (otherwise empty columns appearing on the left would push it right).
+          const dragged = document.querySelector('.card.dragging');
+          const before = dragged ? dragged.getBoundingClientRect().left : null;
+          cols.classList.add('drag-in-progress');
+          if (before != null) {
+            const after = dragged.getBoundingClientRect().left; // forces a reflow
+            cols.scrollLeft += after - before;
+          }
+        });
+      });
+      document.addEventListener('dragend', () => {
+        closeDragState();
+      });
+      renderAll();
+      tryRestore(); // restore the previously opened tasks/ folder, if any
+
+      document.getElementById('btnAddTask').onclick = () => openEditor(null, 'BACKLOG');
+    </script>
+  </body>
+</html>
