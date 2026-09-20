@@ -1,0 +1,50 @@
+name: RSS Reader CI
+
+on:
+  pull_request:
+    paths:
+      - 'rss-reader/**'
+      - '.github/workflows/rss-reader.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [18, 20, 22]
+
+    defaults:
+      run:
+        working-directory: rss-reader
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+          cache-dependency-path: rss-reader/package-lock.json
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Syntax check
+        run: |
+          node --check scripts/rss.js
+          node --check lib/config.js
+          node --check lib/errors.js
+          node --check lib/feed.js
+          node --check lib/http.js
+          node --check lib/releases.js
+          node --check lib/runtime.js
+
+      - name: Test
+        run: npm test
