@@ -161,3 +161,20 @@ test('CLI returns exit code 1 when every selected feed fails', async () => {
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+
+test('CLI emits machine-readable JSON to stdout for fatal config errors', async () => {
+  const dir = tempDataDir();
+  try {
+    fs.writeFileSync(path.join(dir, 'feeds.json'), '{broken json');
+    const result = await runCli(['list', '--format', 'json'], { RSS_READER_DATA_DIR: dir });
+    assert.equal(result.code, 1);
+    assert.equal(result.stderr, '');
+    const payload = JSON.parse(result.stdout);
+    assert.equal(payload.schema_version, 1);
+    assert.equal(payload.ok, false);
+    assert.equal(payload.error.code, 'CONFIG_PARSE_ERROR');
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
