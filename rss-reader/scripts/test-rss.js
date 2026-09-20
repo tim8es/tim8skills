@@ -2,12 +2,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const {
-  dedupeItems,
-  normalizeKeywords,
-  parseFeedXml,
-  parseSince
-} = require('./rss');
+const { dedupeItems, normalizeKeywords, parseFeedXml, parseSince } = require('../lib/feed');
 
 test('parses RSS 2.0 with CDATA and GUID', () => {
   const xml = `<?xml version="1.0"?><rss version="2.0"><channel><title>Example RSS</title><item><guid>post-1</guid><title><![CDATA[Hello <b>world</b>]]></title><link>https://example.com/1</link><pubDate>Sun, 20 Sep 2026 12:00:00 GMT</pubDate><description><![CDATA[<p>Useful summary</p>]]></description></item></channel></rss>`;
@@ -36,8 +31,7 @@ test('handles namespaced RSS date and content fields', () => {
 
 test('missing publication date stays null', () => {
   const xml = `<rss version="2.0"><channel><title>No Dates</title><item><title>Undated</title><link>https://example.com/u</link></item></channel></rss>`;
-  const result = parseFeedXml(xml, 'https://example.com/feed');
-  assert.equal(result.items[0].published_at, null);
+  assert.equal(parseFeedXml(xml, 'https://example.com/feed').items[0].published_at, null);
 });
 
 test('parseSince accepts positive hours/days and rejects malformed values', () => {
@@ -53,14 +47,7 @@ test('normalizes comma-separated keywords', () => {
 });
 
 test('deduplicates items by stable id within the same feed', () => {
-  const item = {
-    id: 'same',
-    feed_url: 'https://example.com/feed',
-    title: 'A',
-    url: 'https://example.com/a',
-    published_at: null,
-    description: ''
-  };
+  const item = { id: 'same', feed_url: 'https://example.com/feed', title: 'A', url: 'https://example.com/a' };
   const result = dedupeItems([item, { ...item, title: 'Changed title' }]);
   assert.equal(result.length, 1);
   assert.equal(result[0].title, 'A');
