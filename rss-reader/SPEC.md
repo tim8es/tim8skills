@@ -102,6 +102,8 @@ The primary skill workflow uses `add`, `remove`, `list`, and `check`.
 - `1`: fatal command, validation, configuration, or retrieval failure.
 - `2`: partial success for `check` — usable items were produced, but at least one source failed.
 
+In `--format json` mode, both successful and fatal machine-readable responses are written to stdout; stderr is reserved for human-readable diagnostics.
+
 ## Parsing requirements
 
 Support common RSS 2.0, Atom, and RSS 1.0/RDF feeds.
@@ -248,5 +250,6 @@ No test may depend on live network access.
 - Partial retrieval is explicit and machine-readable.
 - XML is parsed with a real XML parser rather than regex-based feed parsing.
 - User configuration is not silently discarded on malformed JSON.
-- Unit tests cover RSS, Atom, edge cases, filters, and deduplication.
+- Unit tests cover RSS, Atom, edge cases, filters, deduplication, config failures, and CLI exit-code semantics.
+- CI passes on Node.js 18, 20, and 22.
 - Existing add/remove/list/check command names continue to work.
