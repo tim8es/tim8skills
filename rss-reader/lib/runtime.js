@@ -272,7 +272,7 @@ async function main(argv = process.argv.slice(2)) {
   } catch (error) {
     const payload = { schema_version: SCHEMA_VERSION, ok: false, error: { code: error.code || 'ERROR', message: error.message } };
     const formatIndex = argv.indexOf('--format');
-    if (formatIndex !== -1 && argv[formatIndex + 1] === 'json') console.error(JSON.stringify(payload, null, 2));
+    if (formatIndex !== -1 && argv[formatIndex + 1] === 'json') console.log(JSON.stringify(payload, null, 2));
     else console.error(`Error [${payload.error.code}]: ${payload.error.message}`);
     return 1;
   }
