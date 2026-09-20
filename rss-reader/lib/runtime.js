@@ -15,14 +15,15 @@ const { compareReleases } = require('./releases');
 
 const SCHEMA_VERSION = 1;
 
-async function addFeed(url, options = {}) {
+async function addFeed(url, options = {}, dependencies = {}) {
+  const retrieve = dependencies.fetchUrl || fetchUrl;
   const normalizedUrl = validateHttpUrl(url);
   const config = loadConfig();
   if (config.feeds.some((feed) => feed.url === normalizedUrl)) {
     throw createError('FEED_EXISTS', `Feed already exists: ${normalizedUrl}`);
   }
 
-  const parsed = parseFeedXml(await fetchUrl(normalizedUrl), normalizedUrl);
+  const parsed = parseFeedXml(await retrieve(normalizedUrl), normalizedUrl);
   const feed = {
     url: normalizedUrl,
     name: normalizeText(options.name) || parsed.title || normalizedUrl,
@@ -66,7 +67,8 @@ function listFeeds() {
   };
 }
 
-async function checkFeeds(options = {}, now = new Date()) {
+async function checkFeeds(options = {}, now = new Date(), dependencies = {}) {
+  const retrieve = dependencies.fetchUrl || fetchUrl;
   const config = loadConfig();
   const category = options.category ? normalizeCategory(options.category) : null;
   const sinceDate = parseSince(options.since, now);
@@ -78,7 +80,7 @@ async function checkFeeds(options = {}, now = new Date()) {
 
   for (const feed of feeds) {
     try {
-      const parsed = parseFeedXml(await fetchUrl(feed.url), feed.url);
+      const parsed = parseFeedXml(await retrieve(feed.url), feed.url);
       checkedFeeds += 1;
       feed.lastChecked = now.toISOString();
       const datedItems = parsed.items.filter((item) => item.published_at);
