@@ -21,7 +21,7 @@ node scripts/rss.js <command> [options]
 Requirements:
 
 - Node.js 18+
-- `npm install` completed in the skill directory
+- `npm ci` completed in the skill directory
 - network access for remote feeds
 
 ## Commands
