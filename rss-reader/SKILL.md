@@ -1,6 +1,6 @@
 ---
 name: rss-reader
-description: Read and monitor known RSS and Atom feeds with deterministic tooling. Use when the user wants to add, list, remove, retrieve, filter, monitor, summarize, or analyze content from RSS/Atom sources, including competitor blogs, newsletters, publications, or release feeds. Do not use as general web search and do not invent feed URLs for sites without a known RSS/Atom endpoint.
+description: Reads and monitors known RSS and Atom feeds with deterministic tooling. Use when the user wants to add, list, remove, retrieve, filter, monitor, summarize, or analyze content from RSS/Atom sources, including competitor blogs, newsletters, publications, or release feeds. Do not use as general web search and do not invent feed URLs for sites without a known RSS/Atom endpoint.
 ---
 
 # RSS Reader
