@@ -140,7 +140,7 @@ Common codes include:
 }
 ```
 
-Fatal command errors emitted in JSON mode have the form:
+Fatal command errors emitted in JSON mode are written to stdout and have the form:
 
 ```json
 {
