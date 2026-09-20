@@ -13,7 +13,7 @@ Install the runtime dependency once:
 
 ```bash
 cd rss-reader
-npm install
+npm ci
 ```
 
 ## Quick start
@@ -40,7 +40,6 @@ The JSON response is versioned and includes per-source failures. A failed source
 See:
 
 - [SKILL.md](SKILL.md) — runtime instructions for the model
-- [SPEC.md](SPEC.md) — implementation contract
 - [references/cli.md](references/cli.md) — CLI reference and exit codes
 - [references/data-model.md](references/data-model.md) — structured output schema
 - [references/examples.md](references/examples.md) — usage patterns
