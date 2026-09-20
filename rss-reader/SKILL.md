@@ -27,7 +27,7 @@ Use the bundled CLI for feed retrieval and state. Do not reproduce RSS parsing, 
 
 ## Runtime
 
-Requires Node.js 18+ and the dependency declared in `package.json`. If dependencies are not installed, run `npm install` in the skill directory before executing the CLI.
+Requires Node.js 18+ and the dependency declared in `package.json`. If dependencies are not installed, run `npm ci` in the skill directory before executing the CLI.
 
 For agent retrieval, prefer:
 
