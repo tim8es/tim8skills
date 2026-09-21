@@ -129,14 +129,20 @@ For partial results, consume the JSON payload and inspect `errors`; do not disca
 Default path:
 
 ```text
-rss-reader/data/feeds.json
+~/.rss-reader/feeds.json
 ```
+
+The path is resolved from the current user's home directory. Runtime state is intentionally stored outside the skill directory so updating or replacing the skill does not mix code with mutable user data.
+
+The directory and file are created automatically when state is persisted.
 
 Override for isolated runs or tests:
 
 ```bash
 RSS_READER_DATA_DIR=/tmp/rss-data node scripts/rss.js list --format json
 ```
+
+When `RSS_READER_DATA_DIR` is set, `feeds.json` is read from and written to that directory instead of the default path.
 
 Malformed JSON is a fatal error. The script never silently replaces a malformed config with an empty one.
 
