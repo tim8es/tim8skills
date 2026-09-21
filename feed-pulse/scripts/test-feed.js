@@ -87,3 +87,26 @@ test('does not collide identical GUIDs from different feeds', () => {
 test('rejects unsupported XML roots', () => {
   assert.throws(() => parseFeedXml('<html><body>not a feed</body></html>'), /supported RSS, Atom, or RDF/);
 });
+
+
+test('preserves escaped angle brackets and nested Atom XHTML text', () => {
+  const xml = `<?xml version="1.0"?><feed xmlns="http://www.w3.org/2005/Atom"><title>Text</title><entry><id>tag:example,2</id><title>1 &lt; 2 and 3 &gt; 2</title><summary type="xhtml"><div xmlns="http://www.w3.org/1999/xhtml"><p>Nested <b>details</b></p></div></summary></entry></feed>`;
+  const item = parseFeedXml(xml, 'https://example.com/feed.xml').items[0];
+  assert.equal(item.title, '1 < 2 and 3 > 2');
+  assert.equal(item.summary, 'Nested details');
+});
+
+test('resolves relative Atom links against feed and xml:base', () => {
+  const xml = `<?xml version="1.0"?><feed xmlns="http://www.w3.org/2005/Atom" xml:base="https://cdn.example/root/"><title>Relative</title><entry xml:base="posts/"><id>tag:example,3</id><title>Entry</title><link rel="alternate" href="../article/1"/></entry></feed>`;
+  const item = parseFeedXml(xml, 'https://example.com/feed.xml').items[0];
+  assert.equal(item.url, 'https://cdn.example/root/article/1');
+});
+
+test('truncation never leaves an unpaired Unicode surrogate', () => {
+  const summary = `${'s'.repeat(SUMMARY_MAX_CHARS - 1)}😀tail`;
+  const xml = `<rss version="2.0"><channel><title>Unicode</title><item><title>Item</title><description>${summary}</description></item></channel></rss>`;
+  const item = parseFeedXml(xml, 'https://example.com/feed.xml').items[0];
+  assert.equal(item.summary, `${'s'.repeat(SUMMARY_MAX_CHARS - 1)}😀`);
+  assert.equal(item.summary_truncated, true);
+  assert.doesNotMatch(item.summary, /[\uD800-\uDBFF]$/);
+});
