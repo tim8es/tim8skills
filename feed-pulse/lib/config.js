@@ -46,8 +46,13 @@ function rawText(value) {
   if (Array.isArray(value)) return value.map(rawText).filter(Boolean).join(' ');
   if (typeof value === 'object') {
     const parts = [];
+    for (const key of ['#text', '#cdata']) {
+      if (value[key] == null) continue;
+      const text = rawText(value[key]);
+      if (text) parts.push(text);
+    }
     for (const [key, child] of Object.entries(value)) {
-      if (key.startsWith('@_')) continue;
+      if (key.startsWith('@_') || key === '#text' || key === '#cdata') continue;
       const text = rawText(child);
       if (text) parts.push(text);
     }
