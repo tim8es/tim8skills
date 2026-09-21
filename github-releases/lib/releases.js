@@ -35,7 +35,7 @@ function normalizeApiRelease(release) {
     tag: release.tag_name, title: release.name || release.tag_name,
     url: release.html_url, published_at: release.published_at,
     draft: release.draft, prerelease: release.prerelease,
-    body: String(release.body || '').trim()
+    body: release.body == null ? '' : String(release.body)
   };
 }
 
@@ -154,9 +154,13 @@ function linkedNotes(repository, entry) {
     else if (url.hostname !== 'raw.githubusercontent.com') continue;
     const [ref, ...path] = parts;
     if (!ref || !path.length || !/\.md$/i.test(path.join('/'))) continue;
-    if (!['main', 'master', encodeURIComponent(entry.tag)].includes(ref) && !/^[a-f0-9]{40}$/i.test(ref)) continue;
+    let decodedRef;
+    try { decodedRef = decodeURIComponent(ref); } catch { continue; }
+    const isCommit = /^[a-f0-9]{40}$/i.test(ref);
+    const isReleaseTag = ref === entry.tag || decodedRef === entry.tag;
+    if (!['main', 'master'].includes(ref) && !isReleaseTag && !isCommit) continue;
     if (path.some((part) => /%(?:2e|2f|5c)/i.test(part) || part === '..' || part === '.')) continue;
-    const pinnedRef = /^[a-f0-9]{40}$/i.test(ref) ? ref : encodeURIComponent(entry.tag);
+    const pinnedRef = isCommit ? ref : encodeURIComponent(entry.tag);
     return `https://raw.githubusercontent.com/${repository}/${pinnedRef}/${path.join('/')}`;
   }
   return null;
