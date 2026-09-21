@@ -58,11 +58,18 @@ function printText(payload) {
   if (payload.has_more) console.log(`Showing ${payload.entry_count} of ${payload.total_count}; increase --limit.`);
 }
 
+function requestedFormat(argv) {
+  for (let i = 0; i < argv.length - 1; i += 1) {
+    if (argv[i] === '--format' && ['json', 'text'].includes(argv[i + 1])) return argv[i + 1];
+  }
+  return 'json';
+}
+
 async function main(argv = process.argv.slice(2), dependencies = {}) {
-  let format = 'json';
+  let format = requestedFormat(argv);
   try {
     const { command, options } = parseArgs(argv);
-    format = options.format || 'json';
+    format = options.format || format;
     if (!command || command === 'help' || options.help) { console.log(usage()); return 0; }
     if (!['json', 'text'].includes(format)) throw createError('USAGE_ERROR', '--format must be json or text.');
     if (!Object.hasOwn(OPTIONS, command)) throw createError('USAGE_ERROR', `Unknown command: ${command}`);
