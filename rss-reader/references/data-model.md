@@ -53,9 +53,20 @@ Semantics:
   "title": "New feature",
   "url": "https://example.com/posts/1",
   "published_at": "2026-09-20T18:30:00.000Z",
-  "description": "Short normalized description"
+  "summary": "Short feed-provided summary",
+  "summary_truncated": false,
+  "content": "Longer feed-provided article content, when available",
+  "content_truncated": false
 }
 ```
+
+`summary` is normalized from the feed's `summary` or `description` field and is limited to 2,000 characters.
+
+`content` is normalized separately from Atom `content` or namespaced RSS full-content fields such as `content:encoded` and is limited to 8,000 characters.
+
+`summary_truncated` and `content_truncated` report whether RSS Reader shortened the corresponding normalized field. A value of `false` does **not** prove that the publisher supplied the complete linked article; it only means RSS Reader did not truncate the feed-provided value.
+
+If `content` is `null`, the feed did not provide a dedicated full-content field recognized by the runtime. Agents that need the linked page itself should retrieve `url` with an appropriate web/browser tool.
 
 `published_at` is either an ISO 8601 timestamp or `null`. Missing dates are never replaced with the current time.
 
@@ -66,6 +77,8 @@ Semantics:
 3. deterministic SHA-256 fallback.
 
 Deduplication scopes IDs by feed source so unrelated feeds with identical local GUIDs do not collide.
+
+Keyword filtering searches `title`, `summary`, and `content`.
 
 ## Error object
 
