@@ -1,6 +1,7 @@
 'use strict';
 
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const { createError } = require('./errors');
 
@@ -8,13 +9,12 @@ const DEFAULT_CONFIG = Object.freeze({
   version: 1,
   feeds: [],
   settings: {
-    maxItemsPerFeed: 10,
-    maxAgeDays: 7
+    maxItemsPerFeed: 10
   }
 });
 
 function dataDir() {
-  return process.env.RSS_READER_DATA_DIR || path.join(__dirname, '..', 'data');
+  return process.env.RSS_READER_DATA_DIR || path.join(os.homedir(), '.rss-reader');
 }
 
 function feedsFile() {
@@ -80,9 +80,6 @@ function validateConfig(config) {
   const maxItemsPerFeed = Number.isInteger(settings.maxItemsPerFeed) && settings.maxItemsPerFeed > 0
     ? settings.maxItemsPerFeed
     : DEFAULT_CONFIG.settings.maxItemsPerFeed;
-  const maxAgeDays = Number.isInteger(settings.maxAgeDays) && settings.maxAgeDays > 0
-    ? settings.maxAgeDays
-    : DEFAULT_CONFIG.settings.maxAgeDays;
 
   return {
     version: Number.isInteger(config.version) ? config.version : 1,
@@ -99,7 +96,7 @@ function validateConfig(config) {
         lastItemDate: normalizeIsoOrNull(feed.lastItemDate)
       };
     }),
-    settings: { maxItemsPerFeed, maxAgeDays }
+    settings: { maxItemsPerFeed }
   };
 }
 
@@ -134,6 +131,7 @@ function toPublicFeed(feed) {
 }
 
 module.exports = {
+  dataDir,
   loadConfig,
   normalizeCategory,
   normalizeText,
