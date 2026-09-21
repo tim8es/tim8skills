@@ -45,15 +45,20 @@ function rawText(value) {
   }
   if (Array.isArray(value)) return value.map(rawText).filter(Boolean).join(' ');
   if (typeof value === 'object') {
-    if (value['#text'] != null) return rawText(value['#text']);
-    if (value['#cdata'] != null) return rawText(value['#cdata']);
+    const parts = [];
+    for (const [key, child] of Object.entries(value)) {
+      if (key.startsWith('@_')) continue;
+      const text = rawText(child);
+      if (text) parts.push(text);
+    }
+    return parts.join(' ');
   }
   return '';
 }
 
 function normalizeText(value) {
   return rawText(value)
-    .replace(/<[^>]*>/g, ' ')
+    .replace(/<\/?[A-Za-z][^>]*>/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 }
