@@ -6,6 +6,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const {
+  dataDir,
   loadConfig,
   saveConfig,
   validateHttpUrl
@@ -23,6 +24,49 @@ function withTempDataDir(fn) {
     fs.rmSync(dir, { recursive: true, force: true });
   }
 }
+
+test('default data directory is outside the skill directory', () => {
+  const previous = process.env.RSS_READER_DATA_DIR;
+  delete process.env.RSS_READER_DATA_DIR;
+  try {
+    assert.equal(dataDir(), path.join(os.homedir(), '.rss-reader'));
+    assert.notEqual(dataDir(), path.join(__dirname, '..', 'data'));
+  } finally {
+    if (previous !== undefined) process.env.RSS_READER_DATA_DIR = previous;
+  }
+});
+
+test('RSS_READER_DATA_DIR overrides the default data directory', () => {
+  withTempDataDir((dir) => {
+    assert.equal(dataDir(), dir);
+  });
+});
+
+test('missing config returns an empty default without creating files', () => {
+  withTempDataDir((dir) => {
+    assert.deepEqual(loadConfig(), {
+      version: 1,
+      feeds: [],
+      settings: { maxItemsPerFeed: 10 }
+    });
+    assert.equal(fs.existsSync(path.join(dir, 'feeds.json')), false);
+  });
+});
+
+test('saveConfig creates a missing data directory', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'rss-reader-create-dir-'));
+  const target = path.join(root, 'nested', 'state');
+  const previous = process.env.RSS_READER_DATA_DIR;
+  process.env.RSS_READER_DATA_DIR = target;
+  try {
+    saveConfig({ feeds: [], settings: { maxItemsPerFeed: 10 } });
+    assert.equal(fs.existsSync(path.join(target, 'feeds.json')), true);
+  } finally {
+    if (previous === undefined) delete process.env.RSS_READER_DATA_DIR;
+    else process.env.RSS_READER_DATA_DIR = previous;
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
 
 test('malformed config fails explicitly instead of resetting state', () => {
   withTempDataDir((dir) => {
@@ -45,14 +89,14 @@ test('save/load normalizes categories and preserves feed state', () => {
         lastChecked: '2026-09-20T12:00:00Z',
         lastItemDate: null
       }],
-      settings: { maxItemsPerFeed: 5, maxAgeDays: 14 }
+      settings: { maxItemsPerFeed: 5 }
     });
 
     const config = loadConfig();
     assert.equal(config.feeds[0].name, 'Example');
     assert.equal(config.feeds[0].category, 'competitors');
     assert.equal(config.feeds[0].lastChecked, '2026-09-20T12:00:00.000Z');
-    assert.equal(config.settings.maxItemsPerFeed, 5);
+    assert.deepEqual(config.settings, { maxItemsPerFeed: 5 });
   });
 });
 
