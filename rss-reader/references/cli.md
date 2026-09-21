@@ -58,14 +58,6 @@ node scripts/rss.js check [--category <category>] [--since <duration>] [--keywor
 
 This is the primary retrieval command for agent use.
 
-### Legacy release comparison
-
-```bash
-node scripts/rss.js compare-releases --repo <owner/repo> --from <tag> --to <tag>
-```
-
-This command is retained for compatibility but is outside the primary RSS skill workflow.
-
 ## Filters
 
 ### Category
