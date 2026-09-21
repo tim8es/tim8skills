@@ -51,7 +51,3 @@ npm test
 ```
 
 Tests use Node's built-in test runner and do not require live network access.
-
-## Legacy command
-
-`compare-releases` remains available for backward compatibility, but GitHub release comparison is not part of the primary RSS skill contract.
