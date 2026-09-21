@@ -38,7 +38,7 @@ function installConfig(dir, feeds) {
   const previous = process.env.RSS_READER_DATA_DIR;
   process.env.RSS_READER_DATA_DIR = dir;
   try {
-    saveConfig({ feeds, settings: { maxItemsPerFeed: 10, maxAgeDays: 7 } });
+    saveConfig({ feeds, settings: { maxItemsPerFeed: 10 } });
   } finally {
     if (previous === undefined) delete process.env.RSS_READER_DATA_DIR;
     else process.env.RSS_READER_DATA_DIR = previous;
@@ -69,7 +69,7 @@ test('checkFeeds returns usable partial results and excludes undated items under
         { url: 'https://good.example/feed', name: 'Good', category: 'news', enabled: true },
         { url: 'https://bad.example/feed', name: 'Bad', category: 'news', enabled: true }
       ],
-      settings: { maxItemsPerFeed: 10, maxAgeDays: 7 }
+      settings: { maxItemsPerFeed: 10 }
     });
 
     const fetchUrl = async (url) => {
