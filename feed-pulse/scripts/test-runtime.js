@@ -213,3 +213,65 @@ test('CLI emits machine-readable JSON to stdout for fatal config errors', async 
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+
+test('checkFeeds sorts each feed before applying maxItemsPerFeed', async () => {
+  const dir = tempDataDir();
+  const previous = process.env.FEED_PULSE_DATA_DIR;
+  process.env.FEED_PULSE_DATA_DIR = dir;
+  try {
+    saveConfig({
+      feeds: [{ url: 'https://sorted.example/feed', name: 'Sorted', category: 'news', enabled: true }],
+      settings: { maxItemsPerFeed: 2 }
+    });
+    const xml = `<rss version="2.0"><channel><title>Sorted</title>
+      <item><guid>old</guid><title>Old</title><pubDate>Thu, 17 Sep 2026 00:00:00 GMT</pubDate></item>
+      <item><guid>mid</guid><title>Mid</title><pubDate>Fri, 18 Sep 2026 00:00:00 GMT</pubDate></item>
+      <item><guid>new</guid><title>New</title><pubDate>Sat, 19 Sep 2026 00:00:00 GMT</pubDate></item>
+    </channel></rss>`;
+    const result = await checkFeeds({}, new Date('2026-09-21T00:00:00Z'), { fetchUrl: async () => xml });
+    assert.deepEqual(result.items.map((item) => item.id), ['new', 'mid']);
+  } finally {
+    if (previous === undefined) delete process.env.FEED_PULSE_DATA_DIR;
+    else process.env.FEED_PULSE_DATA_DIR = previous;
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('top-level help flags return usage successfully', async () => {
+  for (const flag of ['--help', '-h']) {
+    const result = await runCli([flag], {});
+    assert.equal(result.code, 0);
+    assert.match(result.stdout, /FeedPulse/);
+    assert.equal(result.stderr, '');
+  }
+});
+
+test('ideas output reports partial errors without claiming that no items were returned', async () => {
+  const dir = tempDataDir();
+  const server = http.createServer((req, res) => {
+    if (req.url === '/good') {
+      res.writeHead(200, { 'content-type': 'application/rss+xml' });
+      res.end(RSS_XML);
+      return;
+    }
+    res.writeHead(503, { 'content-type': 'text/plain' });
+    res.end('unavailable');
+  });
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const { port } = server.address();
+  try {
+    installConfig(dir, [
+      { url: `http://127.0.0.1:${port}/good`, name: 'Good', category: 'news', enabled: true },
+      { url: `http://127.0.0.1:${port}/bad`, name: 'Bad', category: 'news', enabled: true }
+    ]);
+    const result = await runCli(['check', '--format', 'ideas'], { FEED_PULSE_DATA_DIR: dir });
+    assert.equal(result.code, 2);
+    assert.match(result.stdout, /Content Ideas from FeedPulse/);
+    assert.doesNotMatch(result.stdout, /No items returned/);
+    assert.match(result.stderr, /Feed errors/);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
