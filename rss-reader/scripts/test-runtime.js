@@ -160,7 +160,7 @@ test('CLI emits versioned JSON and exit code 2 for partial retrieval', async () 
     assert.equal(result.code, 2);
     assert.equal(result.stderr, '');
     const payload = JSON.parse(result.stdout);
-    assert.equal(payload.schema_version, 1);
+    assert.equal(payload.schema_version, 2);
     assert.equal(payload.command, 'check');
     assert.equal(payload.partial, true);
     assert.equal(payload.item_count, 1);
@@ -206,7 +206,7 @@ test('CLI emits machine-readable JSON to stdout for fatal config errors', async 
     assert.equal(result.code, 1);
     assert.equal(result.stderr, '');
     const payload = JSON.parse(result.stdout);
-    assert.equal(payload.schema_version, 1);
+    assert.equal(payload.schema_version, 2);
     assert.equal(payload.ok, false);
     assert.equal(payload.error.code, 'CONFIG_PARSE_ERROR');
   } finally {
