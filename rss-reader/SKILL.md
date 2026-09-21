@@ -29,6 +29,8 @@ Use the bundled CLI for feed retrieval and state. Do not reproduce RSS parsing, 
 
 Requires Node.js 18+ and the dependency declared in `package.json`. If dependencies are not installed, run `npm ci` in the skill directory before executing the CLI.
 
+Persistent feed state is stored outside the skill directory by default at `~/.rss-reader/feeds.json`. Set `RSS_READER_DATA_DIR` when an isolated or custom state directory is required.
+
 For agent retrieval, prefer:
 
 ```bash
