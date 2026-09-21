@@ -6,10 +6,16 @@ const { main, parseArgs } = require('../lib/runtime');
 
 async function run(args, dependencies = {}) {
   const output = [];
-  const original = console.log;
+  const errors = [];
+  const originalLog = console.log;
+  const originalError = console.error;
   console.log = (value) => output.push(String(value));
-  try { return { code: await main(args, dependencies), text: output.join('\n') }; }
-  finally { console.log = original; }
+  console.error = (value) => errors.push(String(value));
+  try { return { code: await main(args, dependencies), text: output.join('\n'), stderr: errors.join('\n') }; }
+  finally {
+    console.log = originalLog;
+    console.error = originalError;
+  }
 }
 
 test('help works as a top-level flag and compare alias is preserved', async () => {
@@ -45,4 +51,12 @@ test('CLI emits compact schema-v2 metadata and structured failures', async () =>
   assert.equal(payload.entries[0].body, undefined);
   const failed = await run(['list', '--repo', 'acme/tool'], { fetchJson: async () => { throw Object.assign(new Error('offline'), { code: 'TIMEOUT' }); } });
   assert.equal(failed.code, 1); assert.equal(JSON.parse(failed.text).ok, false);
+});
+
+
+test('text format is honored when argument parsing fails', async () => {
+  const result = await run(['latest', '--repo', 'acme/tool', '--format', 'text', '--unknown']);
+  assert.equal(result.code, 1);
+  assert.equal(result.text, '');
+  assert.match(result.stderr, /Error \[USAGE_ERROR\]: Unknown argument: --unknown/);
 });
