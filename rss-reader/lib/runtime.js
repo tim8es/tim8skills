@@ -91,7 +91,7 @@ async function checkFeeds(options = {}, now = new Date(), dependencies = {}) {
       }
       if (keywords.length) {
         feedItems = feedItems.filter((item) => {
-          const text = `${item.title} ${item.description}`.toLowerCase();
+          const text = `${item.title} ${item.summary || ''} ${item.content || ''}`.toLowerCase();
           return keywords.some((keyword) => text.includes(keyword));
         });
       }
@@ -105,7 +105,10 @@ async function checkFeeds(options = {}, now = new Date(), dependencies = {}) {
           title: item.title,
           url: item.url,
           published_at: item.published_at,
-          description: item.description
+          summary: item.summary,
+          summary_truncated: item.summary_truncated,
+          content: item.content,
+          content_truncated: item.content_truncated
         });
       }
     } catch (error) {
@@ -188,7 +191,8 @@ function outputIdeas(payload) {
     console.log(`### ${category.charAt(0).toUpperCase()}${category.slice(1)}\n`);
     for (const item of items.slice(0, 5)) {
       console.log(`- **"${item.title}"** — [${item.feed_name}]`);
-      if (item.description) console.log(`  ${item.description.slice(0, 200)}${item.description.length > 200 ? '…' : ''}`);
+      const preview = item.summary || item.content;
+      if (preview) console.log(`  ${preview.slice(0, 200)}${preview.length > 200 ? '…' : ''}`);
       if (item.url) console.log(`  ${item.url}`);
       console.log();
     }
