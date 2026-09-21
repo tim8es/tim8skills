@@ -7,7 +7,7 @@
     "node": ">=18"
   },
   "scripts": {
-    "test": "node --test scripts/test-*.js"
+    "test": "node --test scripts/test-config.js scripts/test-rss.js scripts/test-runtime.js"
   },
   "dependencies": {
     "fast-xml-parser": "5.11.1"
