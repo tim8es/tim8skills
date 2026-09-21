@@ -5,6 +5,9 @@ const { XMLParser, XMLValidator } = require('fast-xml-parser');
 const { normalizeText, rawText } = require('./config');
 const { createError } = require('./errors');
 
+const SUMMARY_MAX_CHARS = 2000;
+const CONTENT_MAX_CHARS = 8000;
+
 function parser() {
   return new XMLParser({
     ignoreAttributes: false,
@@ -20,6 +23,15 @@ function parser() {
 function toArray(value) {
   if (value == null) return [];
   return Array.isArray(value) ? value : [value];
+}
+
+function truncateText(value, maxChars) {
+  const text = normalizeText(value);
+  if (!text) return { text: null, truncated: false };
+  return {
+    text: text.slice(0, maxChars),
+    truncated: text.length > maxChars
+  };
 }
 
 function parsePublishedAt(item) {
@@ -47,9 +59,17 @@ function extractLink(item) {
   return null;
 }
 
-function fallbackId({ feedUrl = '', title = '', publishedAt = '', description = '' }) {
+function fallbackId({
+  feedUrl = '',
+  title = '',
+  publishedAt = '',
+  summary = '',
+  content = '',
+  description = ''
+}) {
+  const text = summary || content || description || '';
   const digest = crypto.createHash('sha256')
-    .update([feedUrl, title, publishedAt || '', description].join('\n'))
+    .update([feedUrl, title, publishedAt || '', text].join('\n'))
     .digest('hex');
   return `sha256:${digest}`;
 }
@@ -58,14 +78,25 @@ function normalizeItem(item, feedUrl) {
   const title = normalizeText(item.title) || 'Untitled';
   const url = extractLink(item);
   const publishedAt = parsePublishedAt(item);
-  const description = normalizeText(item.description || item.summary || item.content || item.encoded).slice(0, 2000);
+  const summary = truncateText(item.summary || item.description, SUMMARY_MAX_CHARS);
+  const content = truncateText(item.content || item.encoded, CONTENT_MAX_CHARS);
   const explicitId = normalizeText(item.guid || item.id);
+
   return {
-    id: explicitId || url || fallbackId({ feedUrl, title, publishedAt, description }),
+    id: explicitId || url || fallbackId({
+      feedUrl,
+      title,
+      publishedAt,
+      summary: summary.text,
+      content: content.text
+    }),
     title,
     url,
     published_at: publishedAt,
-    description,
+    summary: summary.text,
+    summary_truncated: summary.truncated,
+    content: content.text,
+    content_truncated: content.truncated,
     source_feed_url: feedUrl || null
   };
 }
@@ -145,6 +176,8 @@ function sortItems(items) {
 }
 
 module.exports = {
+  CONTENT_MAX_CHARS,
+  SUMMARY_MAX_CHARS,
   dedupeItems,
   fallbackId,
   normalizeKeywords,
