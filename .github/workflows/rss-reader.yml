@@ -43,7 +43,6 @@ jobs:
           node --check lib/errors.js
           node --check lib/feed.js
           node --check lib/http.js
-          node --check lib/releases.js
           node --check lib/runtime.js
 
       - name: Test
