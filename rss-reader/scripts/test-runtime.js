@@ -12,7 +12,7 @@ const { createError } = require('../lib/errors');
 const { checkFeeds } = require('../lib/runtime');
 
 const RSS_XML = `<?xml version="1.0"?>
-<rss version="2.0">
+<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/">
   <channel>
     <title>Good Feed</title>
     <item>
@@ -21,6 +21,7 @@ const RSS_XML = `<?xml version="1.0"?>
       <link>https://example.com/good-1</link>
       <pubDate>Sun, 20 Sep 2026 18:00:00 GMT</pubDate>
       <description>New automation capability</description>
+      <content:encoded><![CDATA[Detailed deepkeyword body for the agent]]></content:encoded>
     </item>
     <item>
       <guid>undated</guid>
@@ -89,7 +90,41 @@ test('checkFeeds returns usable partial results and excludes undated items under
     assert.equal(result.failed_feeds, 1);
     assert.equal(result.item_count, 1);
     assert.equal(result.items[0].id, 'good-1');
+    assert.equal(result.items[0].summary, 'New automation capability');
+    assert.equal(result.items[0].summary_truncated, false);
+    assert.equal(result.items[0].content, 'Detailed deepkeyword body for the agent');
+    assert.equal(result.items[0].content_truncated, false);
     assert.equal(result.errors[0].code, 'TIMEOUT');
+  } finally {
+    if (previous === undefined) delete process.env.RSS_READER_DATA_DIR;
+    else process.env.RSS_READER_DATA_DIR = previous;
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+
+test('keyword filtering searches full feed content as well as title and summary', async () => {
+  const dir = tempDataDir();
+  const previous = process.env.RSS_READER_DATA_DIR;
+  process.env.RSS_READER_DATA_DIR = dir;
+  try {
+    saveConfig({
+      feeds: [
+        { url: 'https://content.example/feed', name: 'Content', category: 'news', enabled: true }
+      ],
+      settings: { maxItemsPerFeed: 10 }
+    });
+
+    const result = await checkFeeds(
+      { keywords: 'deepkeyword' },
+      new Date('2026-09-21T00:00:00Z'),
+      { fetchUrl: async () => RSS_XML }
+    );
+
+    assert.equal(result.ok, true);
+    assert.equal(result.item_count, 1);
+    assert.equal(result.items[0].title, 'AI agent launch');
+    assert.equal(result.items[0].content, 'Detailed deepkeyword body for the agent');
   } finally {
     if (previous === undefined) delete process.env.RSS_READER_DATA_DIR;
     else process.env.RSS_READER_DATA_DIR = previous;
