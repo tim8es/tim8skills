@@ -51,6 +51,8 @@ node scripts/rss.js check --since 24h --format json
 
 The JSON response is versioned and includes per-source failures. A failed source is not treated as an empty source.
 
+Feed items keep short feed-provided summaries separate from longer feed-provided content. Summaries are bounded to 2,000 characters and content to 8,000 characters, with explicit truncation flags. RSS Reader does not crawl the linked article page; agents can use the returned `url` with a web/browser tool when full-page reading is required.
+
 See:
 
 - [SKILL.md](SKILL.md) — runtime instructions for the model
