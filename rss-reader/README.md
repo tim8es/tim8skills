@@ -25,7 +25,9 @@ node scripts/rss.js check --since 24h --format json
 node scripts/rss.js remove "https://example.com/feed.xml"
 ```
 
-Feed configuration is stored in `data/feeds.json`. Set `RSS_READER_DATA_DIR` to use a different data directory.
+By default, feed configuration and mutable runtime state are stored outside the skill directory in `~/.rss-reader/feeds.json`. The directory and file are created automatically when state is first persisted.
+
+Set `RSS_READER_DATA_DIR` to use a different data directory, for example in tests, CI, or an isolated agent runtime.
 
 ## Agent interface
 
