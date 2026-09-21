@@ -1,41 +1,20 @@
 # GitHub Releases
 
-A focused agent skill for retrieving and comparing release notes from public GitHub repositories.
-
-The runtime resolves release information deterministically. It first checks a repository changelog and falls back to the GitHub Releases API. The model is responsible only for analysis and summarization after retrieval.
-
-## Requirements
-
-- Node.js 18+
-- npm
+Retrieve published release metadata and bounded notes from public GitHub repositories using Node.js 18+ and its standard library. No runtime dependencies or installation step are needed.
 
 ```bash
-cd github-releases
-npm ci
+node scripts/github-releases.js latest --repo openclaw/openclaw
+node scripts/github-releases.js list --repo openclaw/openclaw --since v2026.9.4
+node scripts/github-releases.js notes --repo openclaw/openclaw --tag v2026.9.5
+node scripts/github-releases.js compare --repo openclaw/openclaw --from v2026.9.4 --to v2026.9.5
 ```
 
-## Quick start
+Publication is verified through GitHub Releases API. Discovery omits bodies, drafts, prereleases and non-version channel tags by default. Detailed notes support bounded pages and same-repository Markdown links pinned to a release tag or explicit commit.
 
-```bash
-node scripts/github-releases.js compare \
-  --repo owner/repo \
-  --from v1.0.0 \
-  --to v1.1.0 \
-  --format json
-```
+The CLI is read-only and stateless. A host scheduler owns monitoring state and notifications; follow the [monitoring procedure](references/monitoring.md) to establish a quiet baseline, deduplicate runs and preserve state on errors.
 
-## Scope
+- [Agent workflow](SKILL.md)
+- [Commands, filters, pagination and migration from v1](references/cli.md)
+- [JSON schema v2](references/data-model.md)
 
-This skill handles GitHub release-note retrieval and comparison. It does not handle RSS/Atom feeds, general repository browsing, issues, pull requests, or code review.
-
-See:
-
-- [SKILL.md](SKILL.md)
-- [references/cli.md](references/cli.md)
-- [references/data-model.md](references/data-model.md)
-
-## Tests
-
-```bash
-npm test
-```
+Run offline tests with `npm test`. The HTTP boundary test uses a temporary loopback server; no external services are contacted. Live GitHub checks are separate and subject to public API rate limits.

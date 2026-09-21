@@ -26,14 +26,20 @@ function fetchText(url, options = {}, redirectCount = 0) {
     const transport = parsed.protocol === 'https:' ? https : http;
     const request = transport.get(parsed, {
       headers: {
-        'User-Agent': 'github-releases-skill/1.0',
+        'User-Agent': 'github-releases-skill/2.0',
         Accept: options.accept || 'application/vnd.github+json, text/plain;q=0.9, */*;q=0.1'
       }
     }, (response) => {
       const status = response.statusCode || 0;
+      response.on('error', reject);
+      response.on('aborted', () => reject(createError('RESPONSE_ABORTED', 'Response ended before the complete body arrived.')));
 
       if (status >= 300 && status < 400 && response.headers.location) {
         response.resume();
+        if (options.allowRedirects === false) {
+          reject(createError('UNSAFE_REDIRECT', 'Redirects are disabled for linked release notes.'));
+          return;
+        }
         if (redirectCount >= MAX_REDIRECTS) {
           reject(createError('TOO_MANY_REDIRECTS', `Too many redirects for ${url}.`));
           return;
@@ -51,7 +57,9 @@ function fetchText(url, options = {}, redirectCount = 0) {
 
       if (status < 200 || status >= 300) {
         response.resume();
-        reject(createError('HTTP_ERROR', `HTTP ${status} for ${url}.`));
+        const error = createError('HTTP_ERROR', `HTTP ${status} for ${url}.`);
+        error.status = status;
+        reject(error);
         return;
       }
 
@@ -72,6 +80,8 @@ function fetchText(url, options = {}, redirectCount = 0) {
       request.destroy(createError('TIMEOUT', `Request timed out after ${TIMEOUT_MS} ms.`));
     });
     request.on('error', reject);
+    const deadline = setTimeout(() => request.destroy(createError('TIMEOUT', 'Request exceeded its total deadline.')), TIMEOUT_MS);
+    request.on('close', () => clearTimeout(deadline));
   });
 }
 

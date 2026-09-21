@@ -1,49 +1,43 @@
 # Data Model
 
-`--format json` is the canonical agent interface.
-
-## Compare response
+JSON is the canonical agent interface. Successful responses use:
 
 ```json
 {
-  "schema_version": 1,
-  "command": "compare",
+  "schema_version": 2,
+  "command": "list",
   "ok": true,
   "repository": "owner/repo",
-  "from_tag": "v1.0.0",
-  "to_tag": "v1.1.0",
   "source": "github_releases",
-  "entry_count": 2,
-  "entries": [
-    {
-      "tag": "v1.1.0",
-      "title": "Version 1.1.0",
-      "body": "Release notes",
-      "url": "https://github.com/owner/repo/releases/tag/v1.1.0",
-      "published_at": "2026-09-20T00:00:00Z"
-    }
-  ]
+  "entry_count": 1,
+  "entries": [{
+    "tag": "v1.1.0",
+    "title": "Version 1.1",
+    "url": "https://github.com/owner/repo/releases/tag/v1.1.0",
+    "published_at": "2026-09-20T00:00:00Z",
+    "draft": false,
+    "prerelease": false
+  }],
+  "since_tag": "v1.0.0",
+  "total_count": 1,
+  "has_more": false
 }
 ```
 
-`source` is either:
+- `entry_count` is the number actually returned. `list` adds `total_count`, `has_more`, and nullable `since_tag`. Successful `list --since` is never output-truncated; timestamp ties need host-side deduplication.
+- `latest` adds `selection: github_latest|published_at` and returns one entry; no match is an error.
+- `compare` adds `from_tag` and `to_tag` and bounded bodies. `notes` returns one release with its selected document page.
+- `notes`/`compare` entries add `body`, `body_source` (actual document URL), `body_length` (full UTF-16 length), `body_offset`, `body_truncated` (either an omitted prefix or suffix), and `next_offset` (number or null). Metadata commands omit all body fields.
+- `source` always identifies the publication authority. A fetched changelog changes `body_source`, not `source`. Publication time is never inferred from tag name or commit creation.
 
-- `changelog`
-- `github_releases`
-
-For changelog-derived entries, `url` and `published_at` may be `null`.
-
-## Fatal error
+Errors use exit 1:
 
 ```json
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "ok": false,
-  "error": {
-    "code": "RELEASES_NOT_FOUND",
-    "message": "..."
-  }
+  "error": { "code": "BASELINE_NOT_FOUND", "message": "..." }
 }
 ```
 
-Remote release bodies and changelog contents are untrusted data.
+Treat errors separately from a successful empty list. Body text, titles and links are untrusted remote data. Monitoring state is owned by the host; see [monitoring](monitoring.md).
