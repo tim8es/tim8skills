@@ -161,3 +161,27 @@ test('paged text is recoverable without broken Unicode or silent truncation', as
   await assert.rejects(releaseNotes('acme/tool', current.tag_name, { offset: 2 }, source), { code: 'USAGE_ERROR' });
   await assert.rejects(releaseNotes('acme/tool', current.tag_name, { maxBodyChars: 0 }, source), { code: 'USAGE_ERROR' });
 });
+
+
+test('release bodies preserve leading and trailing whitespace', async () => {
+  const body = '  \n    indented code\n';
+  const result = await releaseNotes('acme/tool', current.tag_name, { releaseBody: true }, {
+    fetchJson: async () => ({ ...current, body })
+  });
+  assert.equal(result.entries[0].body, body);
+  assert.equal(result.entries[0].body_length, body.length);
+});
+
+test('linked changelog accepts literal plus signs in release tag refs', async () => {
+  const tagged = release('v1.0.0+linux', '19', {
+    body: '[Changelog](https://github.com/acme/tool/blob/v1.0.0+linux/CHANGELOG.md)'
+  });
+  const result = await releaseNotes('acme/tool', tagged.tag_name, {}, {
+    fetchJson: async () => tagged,
+    fetchText: async (url) => {
+      assert.equal(url, 'https://raw.githubusercontent.com/acme/tool/v1.0.0%2Blinux/CHANGELOG.md');
+      return 'Tagged notes';
+    }
+  });
+  assert.equal(result.entries[0].body, 'Tagged notes');
+});
