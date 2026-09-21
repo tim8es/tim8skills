@@ -95,6 +95,7 @@ async function checkFeeds(options = {}, now = new Date(), dependencies = {}) {
           return keywords.some((keyword) => text.includes(keyword));
         });
       }
+      feedItems = sortItems(feedItems);
 
       for (const item of feedItems.slice(0, config.settings.maxItemsPerFeed)) {
         items.push({
@@ -150,6 +151,12 @@ function timeAgo(isoDate) {
   return `${Math.floor(hours / 24)}d ago`;
 }
 
+function outputErrors(payload) {
+  if (!payload.errors?.length) return;
+  console.error(`\nFeed errors (${payload.errors.length}):`);
+  for (const error of payload.errors) console.error(`  ✗ ${error.feed_name}: ${error.message}`);
+}
+
 function outputList(payload) {
   if (payload.command === 'list') {
     if (!payload.feeds.length) return console.log('No feeds configured.');
@@ -173,10 +180,7 @@ function outputList(payload) {
       if (item.url) console.log(`  ${item.url}`);
     }
   }
-  if (payload.errors.length) {
-    console.error(`\nFeed errors (${payload.errors.length}):`);
-    for (const error of payload.errors) console.error(`  ✗ ${error.feed_name}: ${error.message}`);
-  }
+  outputErrors(payload);
 }
 
 function outputIdeas(payload) {
@@ -197,7 +201,7 @@ function outputIdeas(payload) {
       console.log();
     }
   }
-  if (payload.errors.length) outputList({ ...payload, items: [] });
+  outputErrors(payload);
 }
 
 function printPayload(payload, format) {
@@ -208,7 +212,8 @@ function printPayload(payload, format) {
 
 function parseArgs(argv) {
   const args = [...argv];
-  const command = args.shift();
+  let command = args.shift();
+  if (command === '--help' || command === '-h') command = 'help';
   const options = {};
   const positionals = [];
   const valueOptions = new Set(['--category', '--name', '--since', '--format', '--keywords']);
