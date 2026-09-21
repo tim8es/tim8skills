@@ -114,9 +114,22 @@ function loadConfig() {
 }
 
 function saveConfig(config) {
-  fs.mkdirSync(dataDir(), { recursive: true });
+  const dir = dataDir();
+  const file = feedsFile();
+  fs.mkdirSync(dir, { recursive: true });
+
   const normalized = validateConfig(config);
-  fs.writeFileSync(feedsFile(), `${JSON.stringify(normalized, null, 2)}\n`);
+  const temporaryFile = path.join(
+    dir,
+    `.feeds.json.${process.pid}.${Date.now()}.tmp`
+  );
+
+  try {
+    fs.writeFileSync(temporaryFile, `${JSON.stringify(normalized, null, 2)}\n`);
+    fs.renameSync(temporaryFile, file);
+  } finally {
+    if (fs.existsSync(temporaryFile)) fs.rmSync(temporaryFile, { force: true });
+  }
 }
 
 function toPublicFeed(feed) {
