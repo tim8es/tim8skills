@@ -6,7 +6,7 @@ A collection of [Claude Code](https://claude.com/claude-code) skills — package
 
 | Skill | Description |
 |---|---|
-| [agent-mind](agent-mind/) | A focused software engineering reviewer. Writes, reviews, and refactors code guided by a maintained graph of engineering directives covering naming, code design, readability, maintainability, architecture, performance, security, and systems patterns. |
+| [agent-mind](agent-mind/) | A focused software engineering reviewer. Writes, reviews, and refactors code guided by a maintained graph of engineering directives covering naming, code design, readability, maintainability, architecture, performance, security, and systems patterns. |\n| [ai-workflow-reviewer](ai-workflow-reviewer/) | Reviews AI/LLM workflows and recommends the simplest sufficient architecture across deterministic automation, LLM use, RAG, tool-using agents, guardrails, and human approval. |
 | [apple-health-reader](apple-health-reader/) | Parses and analyzes Apple Health export data (HealthKit XML export) into daily aggregates (steps, heart rate, sleep, calories, weight) stored in a local JSON database with a Markdown report. |
 | [memory-wiki-router](memory-wiki-router/) | Routes incoming knowledge into the right memory wiki layer, page type, and safety flow. |
 | [obsidian-kanban](obsidian-kanban/) | Manages AI development tasks via an Obsidian Kanban board: creating tasks/epics, decomposition (epic → task → subtask), metadata tracking, status updates, and role-aware execution. Activated via `/kanban`, `/tasks`, `/board`. |
