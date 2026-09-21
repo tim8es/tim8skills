@@ -11,7 +11,6 @@ const {
 const { createError } = require('./errors');
 const { dedupeItems, normalizeKeywords, parseFeedXml, parseSince, sortItems } = require('./feed');
 const { fetchUrl } = require('./http');
-const { compareReleases } = require('./releases');
 
 const SCHEMA_VERSION = 1;
 
@@ -208,7 +207,7 @@ function parseArgs(argv) {
   const command = args.shift();
   const options = {};
   const positionals = [];
-  const valueOptions = new Set(['--category', '--name', '--since', '--format', '--keywords', '--repo', '--from', '--to']);
+  const valueOptions = new Set(['--category', '--name', '--since', '--format', '--keywords']);
 
   for (let i = 0; i < args.length; i += 1) {
     const arg = args[i];
@@ -228,7 +227,7 @@ function parseArgs(argv) {
 }
 
 function usage() {
-  return `RSS Feed Reader\n\nCommands:\n  add <url>            Add and validate a feed\n  remove <url-or-name> Remove a feed\n  list                 List configured feeds\n  check                Retrieve and filter feed items\n  compare-releases     Legacy GitHub release comparison\n\nOptions:\n  --category <cat>     Filter/set category\n  --name <name>        Set feed name\n  --since <time>       Positive hours/days, e.g. 24h or 7d\n  --format <fmt>       list, ideas, or json\n  --keywords <kw>      Comma-separated keywords\n`;
+  return `RSS Feed Reader\n\nCommands:\n  add <url>            Add and validate a feed\n  remove <url-or-name> Remove a feed\n  list                 List configured feeds\n  check                Retrieve and filter feed items\n\nOptions:\n  --category <cat>     Filter/set category\n  --name <name>        Set feed name\n  --since <time>       Positive hours/days, e.g. 24h or 7d\n  --format <fmt>       list, ideas, or json\n  --keywords <kw>      Comma-separated keywords\n`;
 }
 
 async function main(argv = process.argv.slice(2)) {
@@ -241,14 +240,6 @@ async function main(argv = process.argv.slice(2)) {
 
     const format = options.format || 'list';
     if (!['list', 'ideas', 'json'].includes(format)) throw createError('USAGE_ERROR', '--format must be one of: list, ideas, json.');
-
-    if (command === 'compare-releases' || command === 'compare') {
-      if (!options.repo || !options.from || !options.to) {
-        throw createError('USAGE_ERROR', 'Usage: compare-releases --repo <owner/repo> --from <tag1> --to <tag2>');
-      }
-      console.log(await compareReleases(options.repo, options.from, options.to));
-      return 0;
-    }
 
     let payload;
     if (command === 'add') {
