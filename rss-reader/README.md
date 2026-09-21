@@ -25,9 +25,21 @@ node scripts/rss.js check --since 24h --format json
 node scripts/rss.js remove "https://example.com/feed.xml"
 ```
 
-By default, feed configuration and mutable runtime state are stored outside the skill directory in `~/.rss-reader/feeds.json`. The directory and file are created automatically when state is first persisted.
+By default, feed configuration and mutable runtime state are stored outside the skill directory in the current user's home directory:
 
-Set `RSS_READER_DATA_DIR` to use a different data directory, for example in tests, CI, or an isolated agent runtime.
+```text
+<home>/.rss-reader/feeds.json
+```
+
+Examples:
+
+```text
+macOS:   /Users/user/.rss-reader/feeds.json
+Linux:   /home/user/.rss-reader/feeds.json
+Windows: C:\Users\user\.rss-reader\feeds.json
+```
+
+The directory and file are created automatically when state is first persisted. Set `RSS_READER_DATA_DIR` to use a different data directory, for example in tests, CI, or an isolated agent runtime.
 
 ## Agent interface
 
@@ -52,4 +64,4 @@ See:
 npm test
 ```
 
-Tests use Node's built-in test runner and do not require live network access.
+Tests use Node's built-in test runner and do not require live network access. CI validates the runtime on Linux, macOS, and Windows with Node.js 18, 20, and 22.
