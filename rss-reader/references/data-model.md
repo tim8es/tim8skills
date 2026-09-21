@@ -14,7 +14,7 @@
 
 ```json
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "command": "check",
   "ok": true,
   "partial": false,
@@ -122,7 +122,7 @@ Common codes include:
 
 ```json
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "command": "add",
   "ok": true,
   "feed": {},
@@ -134,7 +134,7 @@ Common codes include:
 
 ```json
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "command": "remove",
   "ok": true,
   "feed": {}
@@ -145,7 +145,7 @@ Common codes include:
 
 ```json
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "command": "list",
   "ok": true,
   "feed_count": 2,
@@ -157,7 +157,7 @@ Fatal command errors emitted in JSON mode are written to stdout and have the for
 
 ```json
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "ok": false,
   "error": {
     "code": "USAGE_ERROR",
