@@ -12,7 +12,7 @@ const { createError } = require('./errors');
 const { dedupeItems, normalizeKeywords, parseFeedXml, parseSince, sortItems } = require('./feed');
 const { fetchUrl } = require('./http');
 
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
 
 async function addFeed(url, options = {}, dependencies = {}) {
   const retrieve = dependencies.fetchUrl || fetchUrl;
