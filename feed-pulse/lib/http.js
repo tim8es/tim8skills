@@ -20,7 +20,7 @@ function fetchUrl(url, { redirects = 0 } = {}) {
     const client = parsed.protocol === 'https:' ? https : http;
     const req = client.get(parsed, {
       headers: {
-        'User-Agent': 'rss-reader-skill/1.0',
+        'User-Agent': 'feed-pulse-skill/1.0',
         Accept: 'application/rss+xml, application/atom+xml, application/xml, text/xml, */*;q=0.5'
       }
     }, (res) => {

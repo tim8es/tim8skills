@@ -1,6 +1,6 @@
-# RSS Reader
+# FeedPulse
 
-A Claude Code skill for deterministic RSS/Atom feed retrieval and monitoring.
+A Claude Code skill for deterministic feed monitoring via RSS and Atom.
 
 The runtime script handles network requests, XML parsing, dates, filtering, deduplication, and persisted feed state. The model is responsible for analysis and summarization after data has been retrieved.
 
@@ -12,46 +12,46 @@ The runtime script handles network requests, XML parsing, dates, filtering, dedu
 Install the runtime dependency once:
 
 ```bash
-cd rss-reader
+cd feed-pulse
 npm ci
 ```
 
 ## Quick start
 
 ```bash
-node scripts/rss.js add "https://example.com/feed.xml" --category competitors
-node scripts/rss.js list
-node scripts/rss.js check --since 24h --format json
-node scripts/rss.js remove "https://example.com/feed.xml"
+node scripts/feed-pulse.js add "https://example.com/feed.xml" --category competitors
+node scripts/feed-pulse.js list
+node scripts/feed-pulse.js check --since 24h --format json
+node scripts/feed-pulse.js remove "https://example.com/feed.xml"
 ```
 
 By default, feed configuration and mutable runtime state are stored outside the skill directory in the current user's home directory:
 
 ```text
-<home>/.rss-reader/feeds.json
+<home>/.feed-pulse/feeds.json
 ```
 
 Examples:
 
 ```text
-macOS:   /Users/user/.rss-reader/feeds.json
-Linux:   /home/user/.rss-reader/feeds.json
-Windows: C:\Users\user\.rss-reader\feeds.json
+macOS:   /Users/user/.feed-pulse/feeds.json
+Linux:   /home/user/.feed-pulse/feeds.json
+Windows: C:\Users\user\.feed-pulse\feeds.json
 ```
 
-The directory and file are created automatically when state is first persisted. Set `RSS_READER_DATA_DIR` to use a different data directory, for example in tests, CI, or an isolated agent runtime.
+The directory and file are created automatically when state is first persisted. Set `FEED_PULSE_DATA_DIR` to use a different data directory, for example in tests, CI, or an isolated agent runtime.
 
 ## Agent interface
 
 For agent workflows, prefer:
 
 ```bash
-node scripts/rss.js check --since 24h --format json
+node scripts/feed-pulse.js check --since 24h --format json
 ```
 
 The JSON response is versioned and includes per-source failures. A failed source is not treated as an empty source.
 
-Feed items keep short feed-provided summaries separate from longer feed-provided content. Summaries are bounded to 2,000 characters and content to 8,000 characters, with explicit truncation flags. RSS Reader does not crawl the linked article page; agents can use the returned `url` with a web/browser tool when full-page reading is required.
+Feed items keep short feed-provided summaries separate from longer feed-provided content. Summaries are bounded to 2,000 characters and content to 8,000 characters, with explicit truncation flags. FeedPulse does not crawl the linked article page; agents can use the returned `url` with a web/browser tool when full-page reading is required.
 
 See:
 

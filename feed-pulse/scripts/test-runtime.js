@@ -32,23 +32,23 @@ const RSS_XML = `<?xml version="1.0"?>
 </rss>`;
 
 function tempDataDir() {
-  return fs.mkdtempSync(path.join(os.tmpdir(), 'rss-reader-runtime-'));
+  return fs.mkdtempSync(path.join(os.tmpdir(), 'feed-pulse-runtime-'));
 }
 
 function installConfig(dir, feeds) {
-  const previous = process.env.RSS_READER_DATA_DIR;
-  process.env.RSS_READER_DATA_DIR = dir;
+  const previous = process.env.FEED_PULSE_DATA_DIR;
+  process.env.FEED_PULSE_DATA_DIR = dir;
   try {
     saveConfig({ feeds, settings: { maxItemsPerFeed: 10 } });
   } finally {
-    if (previous === undefined) delete process.env.RSS_READER_DATA_DIR;
-    else process.env.RSS_READER_DATA_DIR = previous;
+    if (previous === undefined) delete process.env.FEED_PULSE_DATA_DIR;
+    else process.env.FEED_PULSE_DATA_DIR = previous;
   }
 }
 
 function runCli(args, env) {
   return new Promise((resolve, reject) => {
-    const child = spawn(process.execPath, [path.join(__dirname, 'rss.js'), ...args], {
+    const child = spawn(process.execPath, [path.join(__dirname, 'feed-pulse.js'), ...args], {
       env: { ...process.env, ...env }
     });
     let stdout = '';
@@ -62,8 +62,8 @@ function runCli(args, env) {
 
 test('checkFeeds returns usable partial results and excludes undated items under --since', async () => {
   const dir = tempDataDir();
-  const previous = process.env.RSS_READER_DATA_DIR;
-  process.env.RSS_READER_DATA_DIR = dir;
+  const previous = process.env.FEED_PULSE_DATA_DIR;
+  process.env.FEED_PULSE_DATA_DIR = dir;
   try {
     saveConfig({
       feeds: [
@@ -96,8 +96,8 @@ test('checkFeeds returns usable partial results and excludes undated items under
     assert.equal(result.items[0].content_truncated, false);
     assert.equal(result.errors[0].code, 'TIMEOUT');
   } finally {
-    if (previous === undefined) delete process.env.RSS_READER_DATA_DIR;
-    else process.env.RSS_READER_DATA_DIR = previous;
+    if (previous === undefined) delete process.env.FEED_PULSE_DATA_DIR;
+    else process.env.FEED_PULSE_DATA_DIR = previous;
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
@@ -105,8 +105,8 @@ test('checkFeeds returns usable partial results and excludes undated items under
 
 test('keyword filtering searches full feed content as well as title and summary', async () => {
   const dir = tempDataDir();
-  const previous = process.env.RSS_READER_DATA_DIR;
-  process.env.RSS_READER_DATA_DIR = dir;
+  const previous = process.env.FEED_PULSE_DATA_DIR;
+  process.env.FEED_PULSE_DATA_DIR = dir;
   try {
     saveConfig({
       feeds: [
@@ -126,8 +126,8 @@ test('keyword filtering searches full feed content as well as title and summary'
     assert.equal(result.items[0].title, 'AI agent launch');
     assert.equal(result.items[0].content, 'Detailed deepkeyword body for the agent');
   } finally {
-    if (previous === undefined) delete process.env.RSS_READER_DATA_DIR;
-    else process.env.RSS_READER_DATA_DIR = previous;
+    if (previous === undefined) delete process.env.FEED_PULSE_DATA_DIR;
+    else process.env.FEED_PULSE_DATA_DIR = previous;
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
@@ -154,7 +154,7 @@ test('CLI emits versioned JSON and exit code 2 for partial retrieval', async () 
 
     const result = await runCli(
       ['check', '--since', '24h', '--format', 'json'],
-      { RSS_READER_DATA_DIR: dir }
+      { FEED_PULSE_DATA_DIR: dir }
     );
 
     assert.equal(result.code, 2);
@@ -185,7 +185,7 @@ test('CLI returns exit code 1 when every selected feed fails', async () => {
     installConfig(dir, [
       { url: `http://127.0.0.1:${port}/bad`, name: 'Bad', category: 'news', enabled: true }
     ]);
-    const result = await runCli(['check', '--format', 'json'], { RSS_READER_DATA_DIR: dir });
+    const result = await runCli(['check', '--format', 'json'], { FEED_PULSE_DATA_DIR: dir });
     assert.equal(result.code, 1);
     const payload = JSON.parse(result.stdout);
     assert.equal(payload.ok, false);
@@ -202,7 +202,7 @@ test('CLI emits machine-readable JSON to stdout for fatal config errors', async 
   const dir = tempDataDir();
   try {
     fs.writeFileSync(path.join(dir, 'feeds.json'), '{broken json');
-    const result = await runCli(['list', '--format', 'json'], { RSS_READER_DATA_DIR: dir });
+    const result = await runCli(['list', '--format', 'json'], { FEED_PULSE_DATA_DIR: dir });
     assert.equal(result.code, 1);
     assert.equal(result.stderr, '');
     const payload = JSON.parse(result.stdout);

@@ -1,5 +1,5 @@
 {
-  "name": "rss-reader-skill-runtime",
+  "name": "feed-pulse-skill-runtime",
   "version": "1.0.0",
   "private": true,
   "type": "commonjs",
@@ -7,7 +7,7 @@
     "node": ">=18"
   },
   "scripts": {
-    "test": "node --test scripts/test-config.js scripts/test-rss.js scripts/test-runtime.js"
+    "test": "node --test scripts/test-config.js scripts/test-feed.js scripts/test-runtime.js"
   },
   "dependencies": {
     "fast-xml-parser": "5.11.1"

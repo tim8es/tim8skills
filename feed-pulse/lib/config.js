@@ -14,7 +14,7 @@ const DEFAULT_CONFIG = Object.freeze({
 });
 
 function dataDir() {
-  return process.env.RSS_READER_DATA_DIR || path.join(os.homedir(), '.rss-reader');
+  return process.env.FEED_PULSE_DATA_DIR || path.join(os.homedir(), '.feed-pulse');
 }
 
 function feedsFile() {

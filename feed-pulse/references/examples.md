@@ -5,14 +5,14 @@
 Add known competitor feeds:
 
 ```bash
-node scripts/rss.js add "https://competitor-a.example/feed.xml" --category competitors
-node scripts/rss.js add "https://competitor-b.example/atom.xml" --category competitors
+node scripts/feed-pulse.js add "https://competitor-a.example/feed.xml" --category competitors
+node scripts/feed-pulse.js add "https://competitor-b.example/atom.xml" --category competitors
 ```
 
 Retrieve the last 24 hours for model analysis:
 
 ```bash
-node scripts/rss.js check --category competitors --since 24h --format json
+node scripts/feed-pulse.js check --category competitors --since 24h --format json
 ```
 
 Then analyze only the returned items. Preserve URLs for claims about specific publications. Each item may include a short `summary` and longer feed-provided `content`. If the task requires the linked article itself, retrieve the item's `url` with an appropriate web/browser tool.
@@ -20,7 +20,7 @@ Then analyze only the returned items. Preserve URLs for claims about specific pu
 ## Keyword monitoring
 
 ```bash
-node scripts/rss.js check --since 7d --keywords "AI,agents,automation" --format json
+node scripts/feed-pulse.js check --since 7d --keywords "AI,agents,automation" --format json
 ```
 
 The model may cluster or summarize the resulting entries, but must not invent entries that were not returned. Keyword matching covers the title, summary, and feed-provided content.

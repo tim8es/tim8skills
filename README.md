@@ -1,6 +1,6 @@
 # tim8skills
 
-A collection of [Claude Code](https://claude.com/claude-code) skills — packaged instructions and scripts that extend Claude Code for specific workflows: code review, task management, process consulting, RSS monitoring, health data analysis, and Windows PowerShell safety.
+A collection of [Claude Code](https://claude.com/claude-code) skills — packaged instructions and scripts that extend Claude Code for specific workflows: code review, task management, process consulting, feed monitoring, health data analysis, and Windows PowerShell safety.
 
 ## Skills
 
@@ -13,7 +13,7 @@ A collection of [Claude Code](https://claude.com/claude-code) skills — package
 | [obsidian-kanban](obsidian-kanban/) | Manages AI development tasks via an Obsidian Kanban board: creating tasks/epics, decomposition (epic → task → subtask), metadata tracking, status updates, and role-aware execution. Activated via `/kanban`, `/tasks`, `/board`. |
 | [ok-process-observability](ok-process-observability/) | Process-cost observability for AI agent work sessions: captures live workflow incidents, runs a post-run session self-audit, and reports deterministic context-cost metrics over the kanban task workspace. |
 | [process-manager-suite](process-manager-suite/) | Specialized workflows for process management in consulting: AS-IS/TO-BE process mapping, process audits, KPI/governance design, and SOP drafting. |
-| [rss-reader](rss-reader/) | Monitors RSS and Atom feeds for content research — blogs, news sites, newsletters, and any feed source. Supports multiple feeds with categories, filters, and summaries. |
+| [feed-pulse](feed-pulse/) | FeedPulse monitors RSS and Atom feeds for content research — blogs, news sites, newsletters, and other feed sources. Supports multiple feeds with categories, filters, summaries, and bounded feed content. |
 | [windows-pwsh-agent-guardrails](windows-pwsh-agent-guardrails/) | Guardrails for Windows PowerShell usage by AI agents: wrappers, paths, approvals, CLI quirks, and command-failure handling. |
 
 ## Usage

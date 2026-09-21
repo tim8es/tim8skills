@@ -153,7 +153,7 @@ function timeAgo(isoDate) {
 function outputList(payload) {
   if (payload.command === 'list') {
     if (!payload.feeds.length) return console.log('No feeds configured.');
-    console.log(`\nRSS Feeds (${payload.feed_count}):\n`);
+    console.log(`\nFeeds (${payload.feed_count}):\n`);
     for (const feed of payload.feeds) {
       console.log(`[${feed.category}] ${feed.enabled ? '✓' : '✗'} ${feed.name}`);
       console.log(`  ${feed.url}`);
@@ -181,7 +181,7 @@ function outputList(payload) {
 
 function outputIdeas(payload) {
   if (!payload.items.length) return outputList(payload);
-  console.log('\n## Content Ideas from RSS\n');
+  console.log('\n## Content Ideas from FeedPulse\n');
   const groups = new Map();
   for (const item of payload.items) {
     if (!groups.has(item.category)) groups.set(item.category, []);
@@ -231,7 +231,7 @@ function parseArgs(argv) {
 }
 
 function usage() {
-  return `RSS Feed Reader\n\nCommands:\n  add <url>            Add and validate a feed\n  remove <url-or-name> Remove a feed\n  list                 List configured feeds\n  check                Retrieve and filter feed items\n\nOptions:\n  --category <cat>     Filter/set category\n  --name <name>        Set feed name\n  --since <time>       Positive hours/days, e.g. 24h or 7d\n  --format <fmt>       list, ideas, or json\n  --keywords <kw>      Comma-separated keywords\n`;
+  return `FeedPulse\n\nCommands:\n  add <url>            Add and validate a feed\n  remove <url-or-name> Remove a feed\n  list                 List configured feeds\n  check                Retrieve and filter feed items\n\nOptions:\n  --category <cat>     Filter/set category\n  --name <name>        Set feed name\n  --since <time>       Positive hours/days, e.g. 24h or 7d\n  --format <fmt>       list, ideas, or json\n  --keywords <kw>      Comma-separated keywords\n`;
 }
 
 async function main(argv = process.argv.slice(2)) {

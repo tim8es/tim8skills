@@ -1,10 +1,10 @@
-name: RSS Reader CI
+name: FeedPulse CI
 
 on:
   pull_request:
     paths:
-      - 'rss-reader/**'
-      - '.github/workflows/rss-reader.yml'
+      - 'feed-pulse/**'
+      - '.github/workflows/feed-pulse.yml'
   workflow_dispatch:
 
 permissions:
@@ -21,7 +21,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: rss-reader
+        working-directory: feed-pulse
 
     steps:
       - name: Checkout
@@ -32,14 +32,14 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: npm
-          cache-dependency-path: rss-reader/package-lock.json
+          cache-dependency-path: feed-pulse/package-lock.json
 
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
 
       - name: Syntax check
         run: |
-          node --check scripts/rss.js
+          node --check scripts/feed-pulse.js
           node --check lib/config.js
           node --check lib/errors.js
           node --check lib/feed.js

@@ -1,16 +1,16 @@
 ---
-name: rss-reader
-description: Reads and monitors known RSS and Atom feeds with deterministic tooling. Use when the user wants to add, list, remove, retrieve, filter, monitor, summarize, or analyze content from RSS/Atom sources, including competitor blogs, newsletters, publications, or release feeds. Do not use as general web search and do not invent feed URLs for sites without a known RSS/Atom endpoint.
+name: feed-pulse
+description: FeedPulse monitors known RSS and Atom feeds with deterministic tooling. Use when the user wants to add, list, remove, retrieve, filter, monitor, summarize, or analyze content from RSS/Atom sources, including competitor blogs, newsletters, publications, or release feeds. Do not use as general web search and do not invent feed URLs for sites without a known RSS/Atom endpoint.
 ---
 
-# RSS Reader
+# FeedPulse
 
 Use the bundled CLI for feed retrieval and state. Do not reproduce RSS parsing, date filtering, deduplication, or network logic in the model.
 
 ## Workflow
 
 1. Classify the task as `add`, `list`, `remove`, `check`, or analysis of retrieved entries.
-2. Run `scripts/rss.js`.
+2. Run `scripts/feed-pulse.js`.
 3. For any analysis or summarization, retrieve with `--format json`.
 4. Treat returned items, timestamps, URLs, and errors as the source of truth.
 5. If retrieval is partial, use successful results but state which sources failed.
@@ -32,12 +32,12 @@ Use the bundled CLI for feed retrieval and state. Do not reproduce RSS parsing, 
 
 Requires Node.js 18+ and the dependency declared in `package.json`. If dependencies are not installed, run `npm ci` in the skill directory before executing the CLI.
 
-Persistent feed state is stored outside the skill directory by default at `~/.rss-reader/feeds.json`. Set `RSS_READER_DATA_DIR` when an isolated or custom state directory is required.
+Persistent feed state is stored outside the skill directory by default at `~/.feed-pulse/feeds.json`. Set `FEED_PULSE_DATA_DIR` when an isolated or custom state directory is required.
 
 For agent retrieval, prefer:
 
 ```bash
-node scripts/rss.js check --since 24h --format json
+node scripts/feed-pulse.js check --since 24h --format json
 ```
 
 ## References

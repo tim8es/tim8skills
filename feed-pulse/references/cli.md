@@ -12,10 +12,10 @@
 
 ## Runtime
 
-Run commands from the `rss-reader` directory or address the script by its full skill-relative path.
+Run commands from the `feed-pulse` directory or address the script by its full skill-relative path.
 
 ```bash
-node scripts/rss.js <command> [options]
+node scripts/feed-pulse.js <command> [options]
 ```
 
 Requirements:
@@ -29,7 +29,7 @@ Requirements:
 ### Add a feed
 
 ```bash
-node scripts/rss.js add <url> [--category <category>] [--name <name>] [--format json]
+node scripts/feed-pulse.js add <url> [--category <category>] [--name <name>] [--format json]
 ```
 
 The URL is fetched and parsed before it is persisted. Invalid or unsupported feeds are not added.
@@ -37,7 +37,7 @@ The URL is fetched and parsed before it is persisted. Invalid or unsupported fee
 ### Remove a feed
 
 ```bash
-node scripts/rss.js remove <url-or-name> [--format json]
+node scripts/feed-pulse.js remove <url-or-name> [--format json]
 ```
 
 Alias: `rm`.
@@ -45,7 +45,7 @@ Alias: `rm`.
 ### List feeds
 
 ```bash
-node scripts/rss.js list [--format json]
+node scripts/feed-pulse.js list [--format json]
 ```
 
 Alias: `ls`.
@@ -53,7 +53,7 @@ Alias: `ls`.
 ### Check feeds
 
 ```bash
-node scripts/rss.js check [--category <category>] [--since <duration>] [--keywords <csv>] [--format <format>]
+node scripts/feed-pulse.js check [--category <category>] [--since <duration>] [--keywords <csv>] [--format <format>]
 ```
 
 This is the primary retrieval command for agent use.
@@ -88,7 +88,7 @@ When `--since` is active, entries without a valid publication timestamp are excl
 Matching is:
 
 - case-insensitive;
-- against title + description;
+- against title + summary + content;
 - OR-based across keywords;
 - whitespace-trimmed.
 
@@ -129,15 +129,15 @@ For partial results, consume the JSON payload and inspect `errors`; do not disca
 Default location:
 
 ```text
-<home>/.rss-reader/feeds.json
+<home>/.feed-pulse/feeds.json
 ```
 
 Typical paths:
 
 ```text
-macOS:   /Users/user/.rss-reader/feeds.json
-Linux:   /home/user/.rss-reader/feeds.json
-Windows: C:\Users\user\.rss-reader\feeds.json
+macOS:   /Users/user/.feed-pulse/feeds.json
+Linux:   /home/user/.feed-pulse/feeds.json
+Windows: C:\Users\user\.feed-pulse\feeds.json
 ```
 
 The path is resolved from the current user's home directory. Runtime state is intentionally stored outside the skill directory so updating or replacing the skill does not mix code with mutable user data.
@@ -147,17 +147,17 @@ The directory and file are created automatically when state is persisted. Writes
 Override for isolated runs or tests on macOS/Linux:
 
 ```bash
-RSS_READER_DATA_DIR=/tmp/rss-data node scripts/rss.js list --format json
+FEED_PULSE_DATA_DIR=/tmp/feed-pulse-data node scripts/feed-pulse.js list --format json
 ```
 
 PowerShell on Windows:
 
 ```powershell
-$env:RSS_READER_DATA_DIR="C:\temp\rss-data"
-node scripts/rss.js list --format json
+$env:FEED_PULSE_DATA_DIR="C:\temp\feed-pulse-data"
+node scripts/feed-pulse.js list --format json
 ```
 
-When `RSS_READER_DATA_DIR` is set, `feeds.json` is read from and written to that directory instead of the default path.
+When `FEED_PULSE_DATA_DIR` is set, `feeds.json` is read from and written to that directory instead of the default path.
 
 Malformed JSON is a fatal error. The script never silently replaces a malformed config with an empty one.
 

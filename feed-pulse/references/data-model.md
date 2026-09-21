@@ -64,7 +64,7 @@ Semantics:
 
 `content` is normalized separately from Atom `content` or namespaced RSS full-content fields such as `content:encoded` and is limited to 8,000 characters.
 
-`summary_truncated` and `content_truncated` report whether RSS Reader shortened the corresponding normalized field. A value of `false` does **not** prove that the publisher supplied the complete linked article; it only means RSS Reader did not truncate the feed-provided value.
+`summary_truncated` and `content_truncated` report whether FeedPulse shortened the corresponding normalized field. A value of `false` does **not** prove that the publisher supplied the complete linked article; it only means FeedPulse did not truncate the feed-provided value.
 
 If `content` is `null`, the feed did not provide a dedicated full-content field recognized by the runtime. Agents that need the linked page itself should retrieve `url` with an appropriate web/browser tool.
 
