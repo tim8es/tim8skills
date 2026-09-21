@@ -28,9 +28,15 @@ function toArray(value) {
 function truncateText(value, maxChars) {
   const text = normalizeText(value);
   if (!text) return { text: null, truncated: false };
+  let end = Math.min(maxChars, text.length);
+  if (end < text.length &&
+      /[\uD800-\uDBFF]/.test(text[end - 1]) &&
+      /[\uDC00-\uDFFF]/.test(text[end])) {
+    end += 1;
+  }
   return {
-    text: text.slice(0, maxChars),
-    truncated: text.length > maxChars
+    text: text.slice(0, end),
+    truncated: end < text.length
   };
 }
 
@@ -44,17 +50,41 @@ function parsePublishedAt(item) {
   return null;
 }
 
-function extractLink(item) {
+function resolveUrl(value, baseUrl = '') {
+  const text = String(value || '').trim();
+  if (!text) return null;
+  try {
+    return new URL(text, baseUrl || undefined).toString();
+  } catch {
+    return text;
+  }
+}
+
+function nodeBase(node, parentBase = '') {
+  if (!node || typeof node !== 'object') return parentBase;
+  const value = node['@_xml:base'] ?? node['@_base'];
+  if (!value) return parentBase;
+  try {
+    return new URL(String(value).trim(), parentBase || undefined).toString();
+  } catch {
+    return parentBase;
+  }
+}
+
+function extractLink(item, baseUrl = '') {
+  const itemBase = nodeBase(item, baseUrl);
   const links = toArray(item.link);
   for (const link of links) {
     if (link && typeof link === 'object' && link['@_href'] && (!link['@_rel'] || link['@_rel'] === 'alternate')) {
-      return String(link['@_href']).trim();
+      return resolveUrl(link['@_href'], nodeBase(link, itemBase));
     }
   }
   for (const link of links) {
-    if (link && typeof link === 'object' && link['@_href']) return String(link['@_href']).trim();
+    if (link && typeof link === 'object' && link['@_href']) {
+      return resolveUrl(link['@_href'], nodeBase(link, itemBase));
+    }
     const text = rawText(link).trim();
-    if (text) return text;
+    if (text) return resolveUrl(text, itemBase);
   }
   return null;
 }
@@ -74,9 +104,9 @@ function fallbackId({
   return `sha256:${digest}`;
 }
 
-function normalizeItem(item, feedUrl) {
+function normalizeItem(item, feedUrl, baseUrl = feedUrl) {
   const title = normalizeText(item.title) || 'Untitled';
-  const url = extractLink(item);
+  const url = extractLink(item, baseUrl);
   const publishedAt = parsePublishedAt(item);
   const summary = truncateText(item.summary || item.description, SUMMARY_MAX_CHARS);
   const content = truncateText(item.content || item.encoded, CONTENT_MAX_CHARS);
@@ -131,22 +161,26 @@ function parseFeedXml(xml, feedUrl = '') {
 
   let title = 'Unknown Feed';
   let rawItems = [];
+  let itemBase = feedUrl;
   if (parsed.rss?.channel) {
     title = normalizeText(parsed.rss.channel.title) || title;
     rawItems = toArray(parsed.rss.channel.item);
+    itemBase = nodeBase(parsed.rss.channel, nodeBase(parsed.rss, feedUrl));
   } else if (parsed.feed) {
     title = normalizeText(parsed.feed.title) || title;
     rawItems = toArray(parsed.feed.entry);
+    itemBase = nodeBase(parsed.feed, feedUrl);
   } else if (parsed.RDF) {
     title = normalizeText(parsed.RDF.channel?.title) || title;
     rawItems = toArray(parsed.RDF.item);
+    itemBase = nodeBase(parsed.RDF, feedUrl);
   } else {
     throw createError('UNSUPPORTED_FEED', 'XML does not contain a supported RSS, Atom, or RDF feed root.');
   }
 
   return {
     title,
-    items: dedupeItems(rawItems.map((item) => normalizeItem(item || {}, feedUrl)))
+    items: dedupeItems(rawItems.map((item) => normalizeItem(item || {}, feedUrl, itemBase)))
   };
 }
 
