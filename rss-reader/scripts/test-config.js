@@ -68,6 +68,27 @@ test('saveConfig creates a missing data directory', () => {
   }
 });
 
+test('saveConfig atomically replaces existing config without leaving temp files', () => {
+  withTempDataDir((dir) => {
+    saveConfig({
+      feeds: [{ url: 'https://first.example/feed', name: 'First', category: 'news', enabled: true }],
+      settings: { maxItemsPerFeed: 10 }
+    });
+    saveConfig({
+      feeds: [{ url: 'https://second.example/feed', name: 'Second', category: 'updates', enabled: true }],
+      settings: { maxItemsPerFeed: 5 }
+    });
+
+    const config = loadConfig();
+    assert.equal(config.feeds.length, 1);
+    assert.equal(config.feeds[0].name, 'Second');
+    assert.equal(config.settings.maxItemsPerFeed, 5);
+
+    const leftovers = fs.readdirSync(dir).filter((name) => name.endsWith('.tmp'));
+    assert.deepEqual(leftovers, []);
+  });
+});
+
 test('malformed config fails explicitly instead of resetting state', () => {
   withTempDataDir((dir) => {
     fs.writeFileSync(path.join(dir, 'feeds.json'), '{broken json');
