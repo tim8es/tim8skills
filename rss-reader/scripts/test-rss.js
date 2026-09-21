@@ -2,7 +2,14 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { dedupeItems, normalizeKeywords, parseFeedXml, parseSince } = require('../lib/feed');
+const {
+  CONTENT_MAX_CHARS,
+  SUMMARY_MAX_CHARS,
+  dedupeItems,
+  normalizeKeywords,
+  parseFeedXml,
+  parseSince
+} = require('../lib/feed');
 
 test('parses RSS 2.0 with CDATA and GUID', () => {
   const xml = `<?xml version="1.0"?><rss version="2.0"><channel><title>Example RSS</title><item><guid>post-1</guid><title><![CDATA[Hello <b>world</b>]]></title><link>https://example.com/1</link><pubDate>Sun, 20 Sep 2026 12:00:00 GMT</pubDate><description><![CDATA[<p>Useful summary</p>]]></description></item></channel></rss>`;
@@ -11,22 +18,40 @@ test('parses RSS 2.0 with CDATA and GUID', () => {
   assert.equal(result.items.length, 1);
   assert.equal(result.items[0].id, 'post-1');
   assert.equal(result.items[0].title, 'Hello world');
-  assert.equal(result.items[0].description, 'Useful summary');
+  assert.equal(result.items[0].summary, 'Useful summary');
+  assert.equal(result.items[0].summary_truncated, false);
+  assert.equal(result.items[0].content, null);
+  assert.equal(result.items[0].content_truncated, false);
   assert.equal(result.items[0].published_at, '2026-09-20T12:00:00.000Z');
 });
 
-test('parses Atom and prefers rel=alternate link', () => {
-  const xml = `<?xml version="1.0"?><feed xmlns="http://www.w3.org/2005/Atom"><title>Atom Feed</title><entry><id>tag:example,1</id><title>Entry</title><link rel="self" href="https://example.com/api/1"/><link rel="alternate" href="https://example.com/posts/1"/><published>2026-09-20T10:00:00Z</published><summary>Summary</summary></entry></feed>`;
+test('parses Atom summary and content separately and prefers rel=alternate link', () => {
+  const xml = `<?xml version="1.0"?><feed xmlns="http://www.w3.org/2005/Atom"><title>Atom Feed</title><entry><id>tag:example,1</id><title>Entry</title><link rel="self" href="https://example.com/api/1"/><link rel="alternate" href="https://example.com/posts/1"/><published>2026-09-20T10:00:00Z</published><summary>Summary</summary><content>Full body text</content></entry></feed>`;
   const result = parseFeedXml(xml, 'https://example.com/atom.xml');
   assert.equal(result.items[0].url, 'https://example.com/posts/1');
   assert.equal(result.items[0].published_at, '2026-09-20T10:00:00.000Z');
+  assert.equal(result.items[0].summary, 'Summary');
+  assert.equal(result.items[0].content, 'Full body text');
 });
 
 test('handles namespaced RSS date and content fields', () => {
-  const xml = `<?xml version="1.0"?><rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>Namespaced</title><item><title>Item</title><link>https://example.com/x</link><dc:date>2026-09-19T09:30:00Z</dc:date><content:encoded><![CDATA[<p>Body text</p>]]></content:encoded></item></channel></rss>`;
+  const xml = `<?xml version="1.0"?><rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>Namespaced</title><item><title>Item</title><link>https://example.com/x</link><dc:date>2026-09-19T09:30:00Z</dc:date><description>Short summary</description><content:encoded><![CDATA[<p>Body text</p>]]></content:encoded></item></channel></rss>`;
   const result = parseFeedXml(xml, 'https://example.com/feed');
   assert.equal(result.items[0].published_at, '2026-09-19T09:30:00.000Z');
-  assert.equal(result.items[0].description, 'Body text');
+  assert.equal(result.items[0].summary, 'Short summary');
+  assert.equal(result.items[0].content, 'Body text');
+});
+
+test('marks summary and content truncation explicitly', () => {
+  const summary = 's'.repeat(SUMMARY_MAX_CHARS + 1);
+  const content = 'c'.repeat(CONTENT_MAX_CHARS + 1);
+  const xml = `<rss version="2.0"><channel><title>Long Feed</title><item><title>Long</title><description>${summary}</description><content>${content}</content></item></channel></rss>`;
+  const item = parseFeedXml(xml, 'https://example.com/feed').items[0];
+
+  assert.equal(item.summary.length, SUMMARY_MAX_CHARS);
+  assert.equal(item.summary_truncated, true);
+  assert.equal(item.content.length, CONTENT_MAX_CHARS);
+  assert.equal(item.content_truncated, true);
 });
 
 test('missing publication date stays null', () => {
