@@ -1,0 +1,48 @@
+name: GitHub Releases CI
+
+on:
+  pull_request:
+    paths:
+      - 'github-releases/**'
+      - '.github/workflows/github-releases.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [18, 20, 22]
+
+    defaults:
+      run:
+        working-directory: github-releases
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+          cache-dependency-path: github-releases/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Syntax check
+        run: |
+          node --check scripts/github-releases.js
+          node --check lib/errors.js
+          node --check lib/http.js
+          node --check lib/releases.js
+          node --check lib/runtime.js
+
+      - name: Test
+        run: npm test
