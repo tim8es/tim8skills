@@ -34,6 +34,22 @@ jobs:
         run: |
           printf '%s' '{"task":"Add a small feature","acceptance":["Function works","Tests pass"],"allowWrites":true}' > /tmp/kanban-demo-args.json
           node _upstream/runner/bin/run-workflow.js obsidian-kanban/templates/dynamic-implementation.workflow.js --plan --args-file /tmp/kanban-demo-args.json
+      - name: Kanban spec → generated upstream workflow → complete plan
+        run: |
+          mkdir -p /tmp/kanban-plan-test/tasks/specs
+          cat > /tmp/kanban-plan-test/tasks/specs/demo.md <<'MD'
+          ---
+          status: backlog
+          ---
+          # Add a testable feature
+          ## Definition of Done (DoD)
+          - [ ] Feature passes tests
+          ## Changelog
+          MD
+          python obsidian-kanban/scripts/kanban.py dynamic init /tmp/kanban-plan-test demo
+          python obsidian-kanban/scripts/kanban.py dynamic plan /tmp/kanban-plan-test demo \
+            --runner "$GITHUB_WORKSPACE/_upstream/runner/bin/run-workflow.js" > /tmp/kanban-plan-test/plan.json
+          python -c 'import json; x=json.load(open("/tmp/kanban-plan-test/plan.json")); assert x["status"]=="planned" and "total agents: 7" in x["stderr"], x'
       - name: Real upstream runner bridge — no-model smoke
         run: |
           mkdir -p /tmp/kanban-dynamic-smoke/tasks
