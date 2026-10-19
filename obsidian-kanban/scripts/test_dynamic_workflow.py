@@ -27,10 +27,13 @@ class TestDynamicWorkflowGate(unittest.TestCase):
             "---\nworkflowMode: dynamic\nstatus: review\n---\n"
             "## Review Checklist\n- [x] checked\n## Comments\n", encoding="utf-8")
         (self.root / "artifact.txt").write_text("good", encoding="utf-8")
+        (self.root / "dummy.workflow.js").write_text("//reviewed", encoding="utf-8")
 
     def state(self, **overrides):
         d = {"version": 1, "task": "auth",
-             "run": {"status": "completed", "exit_code": 0, "approved": True},
+             "run": {"status": "completed", "exit_code": 0, "approved": True,
+                     "workflow": "dummy.workflow.js",
+                     "workflow_sha256": dg.artifact_digest(self.root, "dummy.workflow.js")},
              "verification": {"passed": True, "exit_code": 0, "command": ["python", "-m", "unittest"],
                               "artifacts": {"artifact.txt": dg.artifact_digest(self.root, "artifact.txt")}}}
         d.update(overrides)
@@ -45,6 +48,13 @@ class TestDynamicWorkflowGate(unittest.TestCase):
         self.state()
         gate = hooks.before_move(self.tasks, "auth", "IN REVIEW", "DONE")
         self.assertTrue(gate.ok, gate.message)
+
+    def test_modified_workflow_script_blocks_done(self):
+        self.state()
+        (self.root / "dummy.workflow.js").write_text("//changed", encoding="utf-8")
+        passed, reason = dg.done_gate(self.tasks, "auth")
+        self.assertFalse(passed)
+        self.assertIn("workflow script changed", reason)
 
     def test_stale_artifact_blocks_done(self):
         self.state()
