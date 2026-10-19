@@ -36,7 +36,7 @@ def run_external(command: list[str], cwd: Path, timeout: int):
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=["plan", "run", "verify", "status"])
+    parser.add_argument("action", choices=["plan", "run", "resume", "verify", "status"])
     parser.add_argument("workspace")
     parser.add_argument("slug")
     parser.add_argument("--workflow", help="reviewed .workflow.js path, inside workspace")
@@ -67,7 +67,7 @@ def main() -> int:
             print(json.dumps({"run": state.get("run"), "verification": state.get("verification"),
                               "done_gate": verified, "reason": reason}, ensure_ascii=False))
             return 0
-        if args.action in ("run", "plan"):
+        if args.action in ("run", "resume", "plan"):
             if not args.runner or not args.workflow:
                 parser.error("--runner and --workflow required")
             runner = Path(args.runner).expanduser().resolve()
@@ -76,8 +76,8 @@ def main() -> int:
             workflow = inside(workspace, args.workflow)
             if workflow.suffix != ".js" or not workflow.name.endswith(".workflow.js"):
                 parser.error("expected reviewed *.workflow.js")
-            if args.action == "run" and not args.approve_execution:
-                parser.error("run requires --approve-execution (review JS first)")
+            if args.action in ("run", "resume") and not args.approve_execution:
+                parser.error("run/resume requires --approve-execution (review JS first)")
             if args.workspace_write and not args.approve_execution:
                 parser.error("--workspace-write requires --approve-execution")
             sandbox = "workspace-write" if args.workspace_write else "read-only"
@@ -85,7 +85,9 @@ def main() -> int:
                        "--sandbox", sandbox]
             if args.action == "plan":
                 command.append("--plan")
-            if args.action == "run":
+            elif args.action == "resume":
+                command.append("--resume")
+            if args.action in ("run", "resume"):
                 # Invalidate any previous PASS before invoking a potentially crashing runner.
                 save_atomic(record, {"version": 1, "task": args.slug,
                     "run": {"status": "running", "workflow": str(workflow.relative_to(workspace)),
