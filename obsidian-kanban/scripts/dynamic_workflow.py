@@ -171,7 +171,9 @@ def main() -> int:
                 payload = json.loads(within(workspace, args.result_file).read_text(encoding="utf-8"))
                 if not isinstance(payload, dict):
                     raise ValueError("Native result must be a JSON object")
-                approved = payload.get("approved") is True
+                approved = (payload.get("approved") is True
+                            and payload.get("success") is not False
+                            and payload.get("status") not in ("failed", "error"))
                 with exclusive_run_lock(lock):
                     state = {"version":1, "task":args.slug,
                              "run":{"status":"completed" if approved else "failed",
@@ -230,7 +232,9 @@ def main() -> int:
                 rc, out, err, elapsed = run_external(cmd, workspace, args.timeout)
                 try:
                     payload = json.loads(out.strip())
-                    approved = isinstance(payload, dict) and payload.get("approved") is True
+                    approved = (isinstance(payload, dict) and payload.get("approved") is True
+                                and payload.get("success") is not False
+                                and payload.get("status") not in ("failed", "error"))
                 except json.JSONDecodeError:
                     payload = None
                     approved = False
