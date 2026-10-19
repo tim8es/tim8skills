@@ -7,6 +7,9 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
+import contextlib
+import io
 
 SCRIPTS = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPTS))
@@ -14,6 +17,7 @@ sys.path.insert(0, str(SCRIPTS))
 import dynamic_gate as dg
 import dynamic_eval as ev
 import hooks
+import move_card
 
 
 class TestDynamicWorkflowGate(unittest.TestCase):
@@ -124,6 +128,15 @@ class TestRunnerBridge(unittest.TestCase):
         after = self.cli("status", str(self.root), "auth")
         self.assertTrue(json.loads(after.stdout)["done_gate"])
 
+    def test_resume_uses_upstream_resume_switch(self):
+        common = [str(self.root), "auth", "--runner", str(self.root / "run-workflow.js"),
+                  "--workflow", "demo.workflow.js", "--approve-execution"]
+        first = self.cli("run", *common)
+        self.assertEqual(first.returncode, 0, first.stderr)
+        resumed = self.cli("resume", *common)
+        self.assertEqual(resumed.returncode, 0, resumed.stderr)
+        self.assertEqual(json.loads(resumed.stdout)["status"], "completed")
+
     def test_no_fake_success_on_semantic_rejection(self):
         (self.root / "run-workflow.js").write_text(
             'console.log(JSON.stringify({approved:false}));', encoding="utf-8")
@@ -154,6 +167,40 @@ class TestPairedBenchmark(unittest.TestCase):
         self.assertFalse(result["quality_and_speed_improved_confirmed"])
         self.assertEqual(result["success_delta"], 0)
 
+
+
+class TestPartialMoveFailure(unittest.TestCase):
+    def test_partial_board_spec_transition_is_failure_even_when_retried(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            tasks = root / "tasks"
+            (tasks / "specs").mkdir(parents=True)
+            columns = ["BACKLOG", "ICEBOX", "TODO", "IN PROGRESS", "BLOCKED",
+                       "TESTING", "IN REVIEW", "UAT", "REJECTED", "REWORK", "DONE"]
+            board = "---\\nkanban-plugin: board\\n---\\n\\n"
+            for column in columns:
+                board += f"## {column}\\n\\n"
+                if column == "BACKLOG":
+                    board += "- [ ] [[auth|Auth]]\\n\\t➕ 2026-10-19\\n\\n"
+            board += "%% kanban:settings\\n{}\\n%%\\n"
+            (tasks / "demo.md").write_text(board, encoding="utf-8")
+            (tasks / "specs" / "auth.md").write_text(
+                "---\\nstatus: backlog\\nstartedAt: 2026-10-19\\n---\\n"
+                "## Changelog\\n\\n## Comments\\n", encoding="utf-8")
+            def invoke():
+                prior = sys.argv[:]
+                try:
+                    sys.argv = ["move_card.py", str(root), "auth", "TODO",
+                                "--board", "demo.md"]
+                    with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+                        return move_card.main()
+                finally:
+                    sys.argv = prior
+            with patch.object(move_card, "sync_spec_status", side_effect=OSError("injected failure")):
+                self.assertEqual(invoke(), 1)
+            self.assertEqual(invoke(), 1)  # board is TODO; spec is still BACKLOG
+            self.assertEqual(hooks._frontmatter_value(
+                (tasks / "specs" / "auth.md").read_text(encoding="utf-8"), "status"), "backlog")
 
 if __name__ == "__main__":
     unittest.main()
