@@ -266,5 +266,48 @@ class TestWorkflowPreparation(unittest.TestCase):
             self.assertNotEqual(p.returncode, 0)
             self.assertIn("changed", p.stderr)
 
+
+class TestBenchmarkHarness(unittest.TestCase):
+    def test_codex_structured_usage_parsing(self):
+        from dynamic_benchmark import parse_codex_tokens
+        events = [
+            {"type":"item.completed","item":{"type":"message"}},
+            {"type":"turn.completed","usage":{"input_tokens":117,"output_tokens":23}}
+        ]
+        self.assertEqual(parse_codex_tokens("\n".join(json.dumps(x) for x in events)), 140)
+        self.assertIsNone(parse_codex_tokens('{"type":"item.completed"}'))
+
+    def test_template_does_not_spawn_parallel_writers(self):
+        source = (SCRIPTS.parent / "templates" / "dynamic-implementation.workflow.js").read_text()
+        self.assertIn('phase("Inspect")', source)
+        self.assertIn('phase("Review")', source)
+        self.assertIn('sandbox:"workspace-write"', source)
+        self.assertEqual(source.count('sandbox:"workspace-write"'), 2)
+        self.assertIn('sandbox:"read-only"', source)
+        self.assertIn("return {approved:false", source)
+
+    def test_workflow_inputs_staleness_invalidates_gate(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            tasks = root / "tasks"
+            (tasks / "specs").mkdir(parents=True)
+            (root / "wf.workflow.js").write_text("return {approved:true}")
+            (root / "input.json").write_text('{"task":"original"}')
+            (root / "output.txt").write_text("verified")
+            data = {
+                "version":1, "task":"a",
+                "run":{"status":"completed","exit_code":0,"approved":True,
+                       "workflow":"wf.workflow.js",
+                       "workflow_sha256":dg.artifact_digest(root,"wf.workflow.js"),
+                       "inputs":"input.json",
+                       "inputs_sha256":dg.artifact_digest(root,"input.json")},
+                "verification":{"passed":True,"exit_code":0,"command":["python","-m","unittest"],
+                                "artifacts":{"output.txt":dg.artifact_digest(root,"output.txt")}},
+            }
+            dg.save_atomic(dg.journal_path(tasks,"a"),data)
+            self.assertTrue(dg.done_gate(tasks,"a")[0])
+            (root / "input.json").write_text('{"task":"changed"}')
+            self.assertFalse(dg.done_gate(tasks,"a")[0])
+
 if __name__ == "__main__":
     unittest.main()
