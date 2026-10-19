@@ -177,16 +177,16 @@ class TestPartialMoveFailure(unittest.TestCase):
             (tasks / "specs").mkdir(parents=True)
             columns = ["BACKLOG", "ICEBOX", "TODO", "IN PROGRESS", "BLOCKED",
                        "TESTING", "IN REVIEW", "UAT", "REJECTED", "REWORK", "DONE"]
-            board = "---\\nkanban-plugin: board\\n---\\n\\n"
+            board = "---\nkanban-plugin: board\n---\n\n"
             for column in columns:
-                board += f"## {column}\\n\\n"
+                board += f"## {column}\n\n"
                 if column == "BACKLOG":
-                    board += "- [ ] [[auth|Auth]]\\n\\t➕ 2026-10-19\\n\\n"
-            board += "%% kanban:settings\\n{}\\n%%\\n"
+                    board += "- [ ] [[auth|Auth]]\n\t➕ 2026-10-19\n\n"
+            board += "%% kanban:settings\n{}\n%%\n"
             (tasks / "demo.md").write_text(board, encoding="utf-8")
             (tasks / "specs" / "auth.md").write_text(
-                "---\\nstatus: backlog\\nstartedAt: 2026-10-19\\n---\\n"
-                "## Changelog\\n\\n## Comments\\n", encoding="utf-8")
+                "---\nstatus: backlog\nstartedAt: 2026-10-19\n---\n"
+                "## Changelog\n\n## Comments\n", encoding="utf-8")
             def invoke():
                 prior = sys.argv[:]
                 try:
