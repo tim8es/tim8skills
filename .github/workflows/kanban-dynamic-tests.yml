@@ -50,6 +50,12 @@ jobs:
           python obsidian-kanban/scripts/kanban.py dynamic verify /tmp/kanban-dynamic-smoke smoke \
             --test-cmd "python -c 'print(1 + 1 == 2)'" --artifact deliverable.txt
           python obsidian-kanban/scripts/kanban.py dynamic status /tmp/kanban-dynamic-smoke smoke
+      - name: Reproducible benchmark dry-run (zero model calls)
+        run: |
+          python obsidian-kanban/scripts/kanban.py dynamic-benchmark \
+            obsidian-kanban/evals/manifest.example.json \
+            --runner "$GITHUB_WORKSPACE/_upstream/runner/bin/run-workflow.js" \
+            --model test-model --repeat 2
       - name: Existing Kanban regression suite
         run: python -m unittest discover -s obsidian-kanban/scripts -p 'test_kanban.py' -q
       - name: Dynamic workflow bridge and evidence gate
