@@ -160,6 +160,18 @@ class TestPairedBenchmark(unittest.TestCase):
             with self.assertRaises(ValueError):
                 ev.load_pairs(path)
 
+    def test_reject_unverifiable_claim_despite_complete_pairs(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp) / "runs.jsonl"
+            data = []
+            for arm in ("legacy","dynamic"):
+                data.append({"task_id":"case","repeat":0,"variant":arm,
+                             "passed":True,"wall_seconds":1,"tokens":42,
+                             "evidence_ref":str(Path(tmp) / "missing")})
+            p.write_text("\\n".join(json.dumps(x) for x in data).replace("\\\\n", "\\n"),encoding="utf-8")
+            with self.assertRaises(ValueError):
+                ev.load_pairs(p)
+
     def test_equal_real_measurements_do_not_claim_improvement(self):
         pairs = []
         for i in range(35):
