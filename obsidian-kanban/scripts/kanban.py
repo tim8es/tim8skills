@@ -19,6 +19,8 @@ Commands (→ module):
     resume       → resume (read-only packet, --full-checklist / --brief)
     metrics      → loop_metrics     update     → update (batch of spec mutations in 1 call)
     next         → next_task
+    dynamic      → dynamic_workflow (upstream Claude-style JS workflow runner)
+    dynamic-eval → dynamic_eval (paired quality/efficiency report)
 
 Usage:
     python <SCRIPT_PREFIX>/kanban.py <command> [arguments...]
@@ -60,6 +62,8 @@ COMMANDS = {
     "resume": "resume",
     "metrics": "loop_metrics",
     "next": "next_task",
+    "dynamic": "dynamic_workflow",
+    "dynamic-eval": "dynamic_eval",
 }
 
 
