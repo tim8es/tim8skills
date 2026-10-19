@@ -63,6 +63,12 @@ def init(workspace: Path, slug: str, *, overwrite: bool = False) -> dict:
                 "note":"Use --overwrite only after reviewing the existing script and inputs"}
     workflow.parent.mkdir(parents=True, exist_ok=True)
     input_path.parent.mkdir(parents=True, exist_ok=True)
+    # Agent transcripts and task inputs may contain sensitive project data.
+    # Keep this entire run-directory untracked unless the user explicitly opts in.
+    ignore = workflow.parent.parent / ".gitignore"
+    if not ignore.exists():
+        ignore.write_text("# Private, generated Kanban workflow state; force-add explicitly if needed.\n*\n!.gitignore\n",
+                          encoding="utf-8")
     # Crash-safe per-file replacement. Authoring does not launch agents.
     _atomic_copy(template, workflow)
     _atomic_json(input_path, task_input)
