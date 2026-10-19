@@ -1,6 +1,6 @@
 {
   "repo": "../..",
-  "ref": "main",
+  "ref": "origin/main",
   "tasks": [
     {
       "id": "slugify-case-1",
