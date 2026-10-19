@@ -4,6 +4,14 @@ This role is activated by the `/launch-agents --task <slug>` command or when the
 
 ---
 
+## Dynamic mode routing
+
+When `workflowMode: dynamic` is present, do NOT spawn the legacy one-agent-
+per-task runner; follow `../references/dynamic-workflow.md`. The upstream
+JavaScript runtime is responsible for worker concurrency and resume; the
+Kanban state machine is unchanged. All instructions below remain for legacy
+tasks only.
+
 ## When to delegate a task to a subagent
 
 **Delegate by default** if the task meets ALL the criteria below. This is the default mode, not the exception: all the per-task "scaffolding" (role checklists, spec churn, lint, re-dumping files) then lives in the subagent's context, and the main agent pays ~1 line of summary instead of hundreds of lines of scaffolding. Running a task inline in the main context is a deliberate choice for the cases in the exceptions list, not the default.

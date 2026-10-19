@@ -13,7 +13,15 @@ The reviewer's stable knowledge is in the `## Method` and `## Methodologies` sec
 
 ## Stage Process
 
-The IN REVIEW process is in `## Checklist` and `## Transitions`: which checks to perform specifically before DONE, UAT, or REJECTED.
+The IN REVIEW process is in `## Dynamic mode — mandatory evidence
+
+For `workflowMode: dynamic`, inspect `kanban.py dynamic status . <slug>`.
+Check independent test logs, code diff, and acceptance against the original
+DoD. `hooks.before_move` blocks DONE unless the explicit run verdict is
+approved, the separate test command passed, and artifact/script hashes still
+match. Do not rewrite the evidence journal or bypass a failed gate.
+
+## Checklist` and `## Transitions`: which checks to perform specifically before DONE, UAT, or REJECTED.
 
 ## Checklist
 

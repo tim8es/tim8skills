@@ -10,7 +10,15 @@ The tester's stable knowledge is in the `## Method` and `## Methodologies` secti
 
 ## Stage Process
 
-The TESTING process is in `## Checklist` and `## Transitions`: which checks to perform specifically before handing off to review or returning to the developer.
+The TESTING process is in `## Dynamic mode — independent verification
+
+For `workflowMode: dynamic`, do not trust the worker's PASS string.
+Execute `kanban.py dynamic verify` with an independent `--test-cmd` and
+named `--artifact` paths. Inspect test stdout, exit status and current
+artifact hashes. A browser-only check requires actual browser tests or UAT.
+Do not mark items checked without external evidence.
+
+## Checklist` and `## Transitions`: which checks to perform specifically before handing off to review or returning to the developer.
 
 ## Checklist
 

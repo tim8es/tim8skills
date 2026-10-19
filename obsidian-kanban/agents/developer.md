@@ -10,7 +10,18 @@
 
 ## Role Knowledge
 
-The developer's stable knowledge is in the `## Method`, `## Methodologies`, and `## Role Subagents` sections: how to work step by step, verify artifacts, sync dashboard copies, and hand off the result without losing context.
+The developer's stable knowledge is in the `## Method`, `## Methodologies`, and `## Dynamic workflow execution (workflowMode: dynamic)
+
+Use the reviewed upstream-compatible `*.workflow.js` from the planner.
+Do not auto-approve code or network/write permissions. Preflight with `dynamic
+plan`, and use `kanban.py dynamic run` only after explicit authorization.
+The runner defaults to read-only; `--workspace-write` requires permission.
+Use `dynamic resume` for interrupted upstream jobs rather than running a
+clean workflow. The JS script must return `approved: true`, but this is NOT a
+quality verdict: independently execute tests in TESTING. An error returns
+the task to IN PROGRESS or BLOCKED with exact evidence.
+
+## Role Subagents` sections: how to work step by step, verify artifacts, sync dashboard copies, and hand off the result without losing context.
 
 ## Stage Process
 

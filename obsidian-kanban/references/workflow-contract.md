@@ -157,3 +157,18 @@ Next allowed action: continue only after routing decision is explicit.
 - Hooks should prefer deterministic validation and stdout packets over mutation.
 - Any mutation still goes through existing kanban commands (`move`, `update`, `comment`, `tags`, `check-item`).
 - If a hook needs policy variation, default to strict for `ERROR` and informative for `WARN`.
+
+## Opt-in Dynamic Workflows
+
+Source: `references/dynamic-workflow.md`. Dynamic execution is enabled by
+`workflowMode: dynamic` in task YAML. The existing 11-column Kanban
+lifecycle does not change; agent calls and internal stages are not columns.
+The upstream Claude-style runtime owns scheduling/replay. Kanban owns DoD
+and lifecycle state.
+
+For dynamic tasks, `hooks.before_move` blocks DONE without an explicit
+`approved: true` completed workflow, an independently executed test command
+with exit code zero, and unchanged SHA-256 hashes for reviewed JavaScript
+and at least one verified output artifact. Preflight is never acceptance.
+A new run invalidates old verification. Evidence stored locally is not
+tamper-proof; protect it against untrusted workers in production.

@@ -93,6 +93,15 @@ If the `python` command isn't found but `python3` is — use `python3` in all in
 
 ---
 
+## Optional dynamic workflow requirements
+
+Default Kanban needs Python only. Dynamic mode adds an existing Claude Code
+native workflow executor, OR Node >=18 plus an authenticated Codex CLI and
+separately reviewed standalone runtime from
+`scasella/claude-dynamic-workflows-codex`. Nothing is downloaded or
+executed automatically. Read `references/dynamic-workflow.md` for
+`kanban.py dynamic plan/run/resume/verify/status` and permissions.
+
 ## New Project (`tasks/` doesn't exist)
 
 One command creates the whole structure:

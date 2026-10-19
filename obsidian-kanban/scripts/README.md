@@ -27,6 +27,14 @@ Used in every task work cycle — these 12 commands are enough for the full BACK
 | `next_task.py` | Next task by priority: REWORK → TODO → BACKLOG | No (stdout only) |
 | `archive_done.py` | Move old DONE cards to an archive board | Yes (board + archive) |
 
+### Dynamic workflow commands (opt-in)
+
+`kanban.py dynamic plan/run/resume/verify/status` bridges reviewed Claude-
+style `*.workflow.js` scripts into the standalone Codex re-host, records
+independent test evidence, and exposes the final DONE gate.
+`kanban.py dynamic-eval` compares real paired legacy/dynamic outcomes.
+See `references/dynamic-workflow.md` and `test_dynamic_workflow.py`.
+
 ### Utility / advanced
 
 Fully functional commands, but not the agent's first choice — call directly only for a specific reason, not as an equal alternative to the composites above:

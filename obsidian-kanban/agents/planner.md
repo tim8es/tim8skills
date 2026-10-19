@@ -12,6 +12,16 @@ The planner's stable knowledge is in the `## Method` and `## Methodologies` sect
 
 The TODO process is in `## Checklist` and `## Transitions`: which checks to perform specifically before the developer can take the card into work.
 
+## Opt-in dynamic workflow planning
+
+When the task spec has `workflowMode: dynamic`, author a reviewed
+`*.workflow.js` using Claude Code's native Workflow authoring or the same
+DSL in the pinned Codex standalone re-host. Use upstream
+`agent/parallel/pipeline/phase` rather than emulating concurrency in prose.
+Perform `kanban.py dynamic plan` to check fan-out/budget/permissions and
+record the plan as an artifact. The planner still leaves the card in TODO.
+Legacy task-level delegation does not apply to this mode.
+
 ## Checklist
 
 > No `=== END OF CHECKLIST ===` marker in the output → output truncated, rerun `kanban.py resume "." <slug> --full-checklist`.
@@ -22,7 +32,7 @@ The TODO process is in `## Checklist` and `## Transitions`: which checks to perf
 - [ ] Add a comment via script: `python <SCRIPT_PREFIX>/kanban.py comment "$WORKSPACE_ROOT" <slug> planner "<priority order, planning notes>"`.
   💡 Long text — by default via stdin: `echo "<text>" | kanban.py comment ... --stdin` (SKILL §9).
 - [ ] **Final:** the task stays in TODO — the developer takes it themselves via `move_card … IN_PROGRESS` when ready. The planner does **not** move it to IN PROGRESS.
-- [ ] **⚡ SUBAGENT (mandatory for eligible tasks):** if the task meets the criteria from `agents/subagent-runner.md` (DoD filled in, no blockers, changes only in files) — **call the `Agent` tool right now** with the prompt from `agents/subagent-runner.md` and do NOT continue inline. This is not optional — it's the default. The user being present in the session is **not a reason** to work inline: the subagent works in the background, the main agent stays free for dialogue. Continuing inline is only for tasks on the exceptions list (BACKLOG/BLOCKED, multiple epics).
+- [ ] **⚡ SUBAGENT (mandatory for eligible tasks):** if `workflowMode` is not `dynamic` and the task meets the criteria from `agents/subagent-runner.md` (DoD filled in, no blockers, changes only in files) — **call the `Agent` tool right now** with the prompt from `agents/subagent-runner.md` and do NOT continue inline. This is not optional — it's the default. The user being present in the session is **not a reason** to work inline: the subagent works in the background, the main agent stays free for dialogue. Continuing inline is only for tasks on the exceptions list (BACKLOG/BLOCKED, multiple epics).
 
 ## Method
 - **"Ready" = can be taken right now.** The main check is whether there are unfinished dependencies; a task with an unclosed dependency has no right to sit in TODO (roll back to backlog).
