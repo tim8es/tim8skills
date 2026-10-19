@@ -161,7 +161,8 @@ def main() -> int:
                 raise ValueError("Expected a reviewed *.workflow.js script")
             code_sha = artifact_digest(workspace, workflow_name)
             inputs, inp_name, inp_sha = resolved_inputs(
-                workspace, args.slug, args.args_file, args.workspace_write)
+                workspace, args.slug, args.args_file,
+                True if args.action == "plan" else args.workspace_write)
             if args.action != "plan" and not args.approve_execution:
                 raise ValueError("Execution/import requires --approve-execution")
             if args.action == "import-native":
