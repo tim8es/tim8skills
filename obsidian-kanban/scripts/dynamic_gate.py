@@ -62,6 +62,13 @@ def done_gate(tasks: Path, slug: str) -> tuple[bool, str]:
             return False, "workflow code fingerprint missing"
         if artifact_digest(tasks.parent, workflow_name) != workflow_sha:
             return False, "workflow script changed since execution"
+        inputs_name = run.get("inputs")
+        inputs_sha = run.get("inputs_sha256")
+        if inputs_name is not None:
+            if not isinstance(inputs_name, str) or not isinstance(inputs_sha, str):
+                return False, "workflow input fingerprint missing"
+            if artifact_digest(tasks.parent, inputs_name) != inputs_sha:
+                return False, "workflow inputs changed since execution"
         check = data.get("verification", {})
         if not check.get("passed") or check.get("exit_code") != 0 or not check.get("command"):
             return False, "independent verification missing or failed"
