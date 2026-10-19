@@ -279,7 +279,7 @@ def main() -> int:
                 expected = COLUMN_TO_STATUS[column]
                 if actual != expected:
                     print(f"✗ PARTIAL MOVE: board is {column}, spec status is {actual!r}; "
-                          f"run kanban.py check \\".\\" --slug {args.slug} to reconcile.",
+                          f"run kanban.py check '.' --slug {args.slug} to reconcile.",
                           file=sys.stderr)
                     return 1
             print(f"ⓘ Card [[{args.slug}]] is already in column {column} — nothing to do.")
@@ -329,7 +329,7 @@ def main() -> int:
         spec_exists = (specs_dir / f"{args.slug}.md").is_file()
         if not synced and spec_exists:
             print(f"✗ PARTIAL MOVE: board moved to {column}, but spec was not confirmed. "
-                  f"Run kanban.py check \\".\\" --slug {args.slug} and retry.",
+                  f"Run kanban.py check '.' --slug {args.slug} and retry.",
                   file=sys.stderr)
             return 1
 
@@ -344,8 +344,6 @@ def main() -> int:
         if column == "DONE":
             prefix = ku.detect_script_prefix(workspace_root)
             print(ku.format_next_task(ku.find_next_task(tasks), script_prefix=prefix))
-        # A board-only update is PARTIAL FAILURE, not a successful transition.
-        # Sync must be retried/reconciled before automation considers this DONE.
         return 0
 
 
