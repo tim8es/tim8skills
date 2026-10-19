@@ -32,6 +32,24 @@ jobs:
         run: |
           printf '%s' '{"task":"Add a small feature","acceptance":["Function works","Tests pass"],"allowWrites":true}' > /tmp/kanban-demo-args.json
           node _upstream/runner/bin/run-workflow.js obsidian-kanban/templates/dynamic-implementation.workflow.js --plan --args-file /tmp/kanban-demo-args.json
+      - name: Real upstream runner bridge — no-model smoke
+        run: |
+          mkdir -p /tmp/kanban-dynamic-smoke/tasks
+          printf 'reviewed fixture' > /tmp/kanban-dynamic-smoke/deliverable.txt
+          cat > /tmp/kanban-dynamic-smoke/demo.workflow.js <<'JS'
+          export const meta = { name: "kanban-bridge-smoke", phases: [{title:"Check"}] };
+          phase("Check");
+          return {approved:true, source:"no-agent-smoke"};
+          JS
+          python obsidian-kanban/scripts/kanban.py dynamic run /tmp/kanban-dynamic-smoke smoke \
+            --workflow demo.workflow.js \
+            --runner "$GITHUB_WORKSPACE/_upstream/runner/bin/run-workflow.js" --approve-execution
+          python obsidian-kanban/scripts/kanban.py dynamic resume /tmp/kanban-dynamic-smoke smoke \
+            --workflow demo.workflow.js \
+            --runner "$GITHUB_WORKSPACE/_upstream/runner/bin/run-workflow.js" --approve-execution
+          python obsidian-kanban/scripts/kanban.py dynamic verify /tmp/kanban-dynamic-smoke smoke \
+            --test-cmd "python -c 'print(1 + 1 == 2)'" --artifact deliverable.txt
+          python obsidian-kanban/scripts/kanban.py dynamic status /tmp/kanban-dynamic-smoke smoke
       - name: Existing Kanban regression suite
         run: python -m unittest discover -s obsidian-kanban/scripts -p 'test_kanban.py' -q
       - name: Dynamic workflow bridge and evidence gate
