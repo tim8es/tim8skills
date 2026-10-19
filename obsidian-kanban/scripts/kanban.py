@@ -21,6 +21,7 @@ Commands (→ module):
     next         → next_task
     dynamic      → dynamic_workflow (upstream Claude-style JS workflow runner)
     dynamic-eval → dynamic_eval (paired quality/efficiency report)
+    dynamic-benchmark → dynamic_benchmark (isolated real model A/B runner)
 
 Usage:
     python <SCRIPT_PREFIX>/kanban.py <command> [arguments...]
@@ -64,6 +65,7 @@ COMMANDS = {
     "next": "next_task",
     "dynamic": "dynamic_workflow",
     "dynamic-eval": "dynamic_eval",
+    "dynamic-benchmark": "dynamic_benchmark",
 }
 
 
