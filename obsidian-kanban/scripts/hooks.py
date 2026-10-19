@@ -244,6 +244,20 @@ def before_move(tasks: Path, slug: str, source: str, target: str, title: str | N
                 ),
             )
 
+    # Opt-in dynamic tasks cannot be closed on checklist assertions alone.
+    # This is deliberately inside before_move: prompts and external agents cannot
+    # bypass the gate by forgetting to run a separate CLI check.
+    if target == "DONE":
+        dynamic_mode = (_frontmatter_value(spec_text, "workflowMode") or "").strip().lower()
+        if dynamic_mode == "dynamic":
+            from dynamic_gate import done_gate
+            passed, reason = done_gate(tasks, slug)
+            if not passed:
+                return HookResult(
+                    ok=False, event="before_move",
+                    message=f"Cannot move {source} -> DONE: {reason}",
+                    recovery=f"Run kanban.py dynamic status . {slug}; complete run and independent verification before retrying.",
+                )
     return HookResult(ok=True, event="before_move", message=f"{source} -> {target} allowed")
 
 
