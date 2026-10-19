@@ -1,0 +1,26 @@
+name: Kanban dynamic-workflow regression
+on:
+  push:
+    branches:
+      - feat/kanban-dynamic-workflows
+    paths:
+      - 'obsidian-kanban/**'
+      - '.github/workflows/kanban-dynamic-tests.yml'
+  workflow_dispatch:
+
+jobs:
+  offline-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Existing Kanban regression suite
+        run: python -m unittest discover -s obsidian-kanban/scripts -p 'test_kanban.py' -q
+      - name: Dynamic workflow bridge and evidence gate
+        run: python -m unittest discover -s obsidian-kanban/scripts -p 'test_dynamic_workflow.py' -q
