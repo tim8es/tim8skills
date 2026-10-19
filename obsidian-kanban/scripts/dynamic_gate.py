@@ -54,8 +54,14 @@ def done_gate(tasks: Path, slug: str) -> tuple[bool, str]:
         run = data.get("run", {})
         if run.get("status") != "completed" or run.get("exit_code") != 0:
             return False, "workflow has not completed successfully"
-        if run.get("approved") is False:
-            return False, "workflow reported approved:false"
+        if run.get("approved") is not True:
+            return False, "workflow has no explicit approved:true"
+        workflow_name = run.get("workflow")
+        workflow_sha = run.get("workflow_sha256")
+        if not isinstance(workflow_name, str) or not isinstance(workflow_sha, str):
+            return False, "workflow code fingerprint missing"
+        if artifact_digest(tasks.parent, workflow_name) != workflow_sha:
+            return False, "workflow script changed since execution"
         check = data.get("verification", {})
         if not check.get("passed") or check.get("exit_code") != 0 or not check.get("command"):
             return False, "independent verification missing or failed"
