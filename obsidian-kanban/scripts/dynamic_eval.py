@@ -15,6 +15,26 @@ import statistics
 import sys
 
 
+def validate_evidence(row: dict) -> None:
+    """Require real saved logs and a deterministic reconciliation of scored PASS."""
+    root = Path(row.get("evidence_ref") or "")
+    required = ("agent.stdout.txt", "agent.stderr.txt", "tests.stdout.txt",
+                "tests.stderr.txt", "artifacts.json")
+    if not root.is_dir() or any(not (root / name).is_file() for name in required):
+        raise ValueError(f"raw evidence folder missing/incomplete: {root}")
+    artifacts = json.loads((root / "artifacts.json").read_text(encoding="utf-8"))
+    verified = artifacts.get("verified") or []
+    missing = artifacts.get("missing") or []
+    if not verified or not isinstance(verified, list) or not isinstance(missing, list):
+        raise ValueError(f"no verified artifact hashes: {root}")
+    for entry in verified:
+        if not isinstance(entry.get("path"), str) or not isinstance(entry.get("sha256"), str) or len(entry["sha256"]) != 64:
+            raise ValueError(f"bad artifact evidence: {root}")
+    scored = row.get("agent_exit_code") == 0 and row.get("test_exit_code") == 0 and not missing
+    if row.get("passed") is not scored:
+        raise ValueError(f"success claim contradicts exit codes/artifacts: {root}")
+
+
 def load_pairs(path: Path):
     rows = [json.loads(l) for l in path.read_text(encoding="utf-8").splitlines() if l.strip()]
     by_key: dict[tuple, dict] = defaultdict(dict)
@@ -27,6 +47,7 @@ def load_pairs(path: Path):
                 or row["tokens"] < 0 or not isinstance(row["wall_seconds"], (int, float))
                 or row["wall_seconds"] <= 0):
             raise ValueError(f"bad measurement: {key}/{arm}")
+        validate_evidence(row)
         by_key[key][arm] = row
     if not by_key or any(set(pair) != {"legacy", "dynamic"} for pair in by_key.values()):
         raise ValueError("benchmark must have matched legacy/dynamic runs for every (task_id, repeat)")
