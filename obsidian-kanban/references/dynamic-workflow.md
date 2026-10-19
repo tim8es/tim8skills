@@ -1,164 +1,144 @@
-# Dynamic Workflows for Obsidian Kanban — opt-in
+# Dynamic Workflow — architecture and runtime contract (opt-in)
 
-## Design decision: reuse, do not clone Claude Code's runtime
+> For the full installation, first run, and benchmark commands, start with
+> [QUICKSTART-DYNAMIC.md](../QUICKSTART-DYNAMIC.md).
 
-Native Claude Code Dynamic Workflows (introduced May 28, 2026) execute a
-JavaScript script with `agent()`, `parallel()`, `pipeline()`, `phase()`,
-structured results, concurrency bounds, and checkpoint/replay. Their proprietary
-runtime is not a Python library. **Do not reimplement these primitives in Kanban.**
+## Reused implementation (not a new orchestrator)
 
-Sources:
-- Anthropic: https://claude.com/blog/introducing-dynamic-workflows-in-claude-code
-- Claude Code docs: https://code.claude.com/docs/en/dynamic-workflows
-- Standalone MIT re-host of the same DSL for Codex:
-  https://github.com/scasella/claude-dynamic-workflows-codex
-  (evaluated upstream commit `16524bea870a51ac7bfb3dc7dce77e333c7a56e1`,
-  license MIT; install separately, NOT vendored or auto-downloaded).
+- Official [Claude Code Dynamic Workflows](https://code.claude.com/docs/en/workflows):
+  native JavaScript scripts, agent(), parallel(), pipeline(), phase(),
+  checkpoints and resumption. The native runtime stays inside Claude Code.
+- [Unofficial standalone Codex re-host](https://github.com/scasella/claude-dynamic-workflows-codex):
+  preserves the same workflow DSL, binds agent() to Codex app-server,
+  implements parallel scheduling, per-agent journal replay, model/sandbox
+  controls, and native-looking progress viewers. Reviewed, MIT-licensed
+  revision: **16524bea870a51ac7bfb3dc7dce77e333c7a56e1**.
 
-The Kanban extension is strictly an **adapter + evidence gate + measurement
-layer**. Native Claude Code should use native Dynamic Workflows when available.
-The standalone path delegates all worker scheduling and execution to the re-host.
+Kanban does NOT reimplement the agent scheduler or DSL; it owns task state,
+quality transitions and independent acceptance evidence. The runner remains
+an explicit external dependency, not copied or downloaded by the skill.
 
-## Legacy compatibility
+## Layer boundary
 
-Default mode and all existing board columns remain unchanged. Opt in to
-independent worker orchestration by adding `workflowMode: dynamic` to the
-spec's YAML frontmatter (prefer the existing Kanban mutator once supported;
-do not manually edit a live spec during simultaneous transitions). The new
-completion gate runs ONLY for such tasks.
+| Component | Responsibilities | Source files |
+|---|---|---|
+| Kanban control plane | Card/status/DoD, permissions, human UAT | SKILL.md, hooks.py, move_card.py |
+| Workflow template | Read-only parallel inspect → serial implement → parallel adversarial reviews → bounded repair | templates/dynamic-implementation.workflow.js |
+| Upstream runner | agent(), parallel(), pipeline(), checkpoint/replay, Codex model calls | External upstream repo |
+| Kanban bridge | Arguments, opt-in approval, runner lifecycle, journal path, retries delegated to upstream | scripts/dynamic_workflow.py |
+| Evidence gate | Independent command results, script/input/output hashes | scripts/dynamic_gate.py |
+| Task setup | Extract DoD and objective task from spec, do not overwrite reviewed scripts | scripts/dynamic_prepare.py |
+| Evals | Isolated Git worktrees, same baseline SHA/model/hidden tests, token reports, paired CI | scripts/dynamic_benchmark.py, dynamic_eval.py |
 
-Kanban lifecycle: BACKLOG → TODO → IN PROGRESS → TESTING → IN REVIEW → DONE.
-A workflow may have many worker phases and retries **within** one card.
-Do not map every `agent()` call to a new Kanban card.
+The existing state machine is unchanged:
 
-## Authoring the workflow
+BACKLOG → TODO → IN PROGRESS → TESTING → IN REVIEW → DONE
 
-Use Claude Code's Workflow tool to author a JS workflow, or author one from the
-same DSL for the standalone re-host. An example:
+Upstream stages live **inside** one Kanban task. Do not generate a separate
+board card for each agent call. Dynamic mode is activated only by the
+`workflowMode: dynamic` field (added by `dynamic init`). Legacy tasks follow
+the old subagent-runner flow.
 
-```javascript
-export const meta = {
-  name: "auth-review",
-  description: "Independent verification of auth implementation",
-  phases: [{title: "Inspect"}, {title: "Adversarial review"}]
-};
-phase("Inspect");
-const audits = await parallel([
-  () => agent("Audit auth API behavior and missing tests.", {label:"Backend"}),
-  () => agent("Audit auth UI and accessibility.", {label:"Frontend"})
-]);
-phase("Adversarial review");
-const verdicts = await pipeline(audits.filter(Boolean),
-  async (finding) => agent(
-    "Independently reproduce or refute this finding: " + JSON.stringify(finding),
-    {label:"Verify"}
-  )
-);
-return {approved: verdicts.every(Boolean), audits, verdicts};
+## Real entrypoints
+
+All commands use the existing dispatcher:
+
+```text
+kanban.py dynamic doctor <workspace> <slug> --runner <path>
+kanban.py dynamic init <workspace> <slug> [--overwrite]
+kanban.py dynamic plan <workspace> <slug> --runner <path>
+kanban.py dynamic run <workspace> <slug> --runner <path>
+  --workspace-write --approve-execution [--frontier|--model ...]
+kanban.py dynamic resume <workspace> <slug> --runner <path>
+  --workspace-write --approve-execution
+kanban.py dynamic import-native <workspace> <slug> --result-file <json>
+  --approve-execution
+kanban.py dynamic verify <workspace> <slug> --test-cmd <command>
+  --artifact <path> [--artifact <path> ...]
+kanban.py dynamic status <workspace> <slug>
+kanban.py dynamic-benchmark <manifest> --runner <path> --model <model>
+  [--execute] [--repeat N]
+kanban.py dynamic-eval <results.jsonl>
 ```
 
-This script illustrates syntax only. `every(Boolean)` is NOT a sufficient
-acceptance test for production: use structured claims, reproduce findings,
-and run objective tests before completing Kanban. The script must be inspected
-for malicious or runaway behavior before running.
+## Workflow assurance
 
-## Run via standalone Codex re-host
+Before a dynamic card reaches DONE, **inside the transition hook**:
 
-Prerequisites: Node >=18, authenticated `codex app-server`, downloaded and
-reviewed `scasella/claude-dynamic-workflows-codex` runner at the pinned revision.
-No third-party code is auto-executed by the skill.
+1. A completed upstream/native-import result explicitly says `approved: true`.
+   Process exit 0 alone is insufficient.
+2. The reviewed workflow script bytes still match their run-time SHA-256.
+3. Generated task input bytes still match their run-time SHA-256 (if present).
+4. A separate test process finished exit 0. A worker's self-attested PASS is
+   not counted as a test.
+5. At least one named output artifact still matches its SHA-256 recorded
+   after the tests.
+6. Existing Kanban review and lifecycle gates also apply.
 
-Commands from project root (adjust skill path to detected SCRIPT_PREFIX):
+Records are stored under `tasks/.dynamic-workflows/`:
 
-```bash
-python obsidian-kanban/scripts/kanban.py dynamic plan "." auth \
-  --runner /trusted/claude-dynamic-workflows-codex/runner/bin/run-workflow.js \
-  --workflow workflows/auth-review.workflow.js
-
-python obsidian-kanban/scripts/kanban.py dynamic run "." auth \
-  --runner /trusted/claude-dynamic-workflows-codex/runner/bin/run-workflow.js \
-  --workflow workflows/auth-review.workflow.js \
-  --approve-execution --budget 200000
-
-python obsidian-kanban/scripts/kanban.py dynamic verify "." auth \
-  --test-cmd "python -m unittest discover -s tests" \
-  --artifact src/auth.py --artifact tests/test_auth.py
-
-python obsidian-kanban/scripts/kanban.py dynamic status "." auth
+```text
+scripts/<slug>.workflow.js  # reviewed script, generated from template
+inputs/<slug>.json          # task / acceptance criteria
+upstream/<slug>.jsonl       # actual agent journal (the upstream runtime)
+runs/<slug>.json            # latest run + independent verification
+locks/<slug>.lock           # prevents simultaneous runs for one task
 ```
 
-`run` defaults to read-only worker sandbox. File edits require
-`--workspace-write`, which also requires `--approve-execution`. The runner
-executes untrusted agent code within configured Codex permissions; Node `vm`
-alone is not a security boundary. Do not use `--workspace-write` on an
-unreviewed script or an untrusted repo.
+A new run uses upstream `--fresh` and invalidates any earlier verification
+**before** execution. `resume` uses `--resume` against exactly the same
+journal, script/inputs hash and sandbox policy. Incomplete processes leave
+state `running`, which rejects DONE until replay succeeds and verification
+is rerun. Manual Kanban `resume` is still a context packet, not a runner
+restart.
 
-Independent `verify` executes the supplied test command separately from the
-agents. It logs the exit code, elapsed time, truncated stdout/stderr, and SHA-256
-of each supplied artifact. If an artifact changes, `DONE` is blocked.
-Evidence is local operational data, **not cryptographic attestation**: agents
-with access to this directory can tamper with it. Protect journal paths against
-untrusted workers in a stronger deployment.
+The generated script's read-only inspection/review is parallel, whereas
+writes are intentionally serialized. It chooses **at most one repair round**,
+which limits uncontrolled cost and concurrent edit conflicts. The runtime
+supports more advanced patterns, but tasks should only use more agents when
+the measured gain justifies it.
 
-Native Claude Code work: use the same spec and native script, but currently
-the bridge's automatic machine-readable journal applies only to the standalone
-re-host. Do **not** bypass `DONE` gating for native runs; a future native
-adapter must produce equivalent evidence.
+## Native Claude Code distinction
 
-## Reliability and limits
+Claude Code already provides background runs, `/workflows` and the
+`ultracode` trigger. Use them directly when using Claude models. Its native
+workflow process is not exposed as a portable Python API. For now,
+`import-native` can ingest an explicitly saved native return JSON, followed
+by an independent `verify`. This is an **external declaration**: without an
+authenticated runtime receipt it does not prove provenance. Do not claim the
+native CLI was automatically orchestrated by the Kanban bridge.
 
-- `tasks/.dynamic-workflows/runs/<slug>.json` is a per-task latest-run journal;
-  a new run invalidates earlier verification.
-- `verify` records an artifact fingerprint and blocks a stale result.
-- The underlying re-host implements parallel/pipeline, checkpoint/resume, model
-  routing, and runner limits; use its own `--resume` for incomplete workers.
-- The current bridge is synchronous and does not expose cancel/pause/attach;
-  it is a first integration increment, not durable supervision.
-- Existing `kanban.py resume` remains a Kanban context packet, not a process
-  checkpoint. A process crash can require invoking upstream recovery manually.
-- `workflowMode: dynamic` guards DONE via `hooks.before_move`.
-- The exit code of `move_card.py` now signals failure for board/spec
-  partial writes. Reconcile before retrying, because board may have moved.
+## Security and consistency boundaries
 
-## Proving quality and efficiency
+- `--approve-execution` is required to launch or import.
+- `--workspace-write` must be intentionally selected; default is read-only.
+- No `danger-full-access` mode is exposed by the bridge.
+- Treat user-generated JS and task text as untrusted. A project may be
+  malicious and have tool-side injection attempts.
+- An agent with write access to the entire project may also alter the
+  `tasks/.dynamic-workflows` journal; local hashes protect staleness but
+  are not tamper-proof. Keep evidence in a protected external store for
+  security-critical production use.
+- `move_card.py` returns failure for board-only/spec-only divergence; a
+  retried move refuses to claim success until reconciliation.
+- The generated template is **not** a secure container. Enforce platform
+  sandbox permissions and worktrees for untrusted tasks.
+- The Codex bridge is synchronous: leave the terminal open while the runner
+  executes. After a crash, invoke `resume` to replay cached completed agents;
+  non-idempotent external side effects still require human assessment.
 
-First run **offline mechanism regression tests**, which prove safety invariants
-but do NOT prove higher coding quality or token efficiency:
+## Verification and honest success criterion
 
-```bash
-python -m unittest discover -s obsidian-kanban/scripts -p 'test_dynamic_workflow.py'
-python -m unittest discover -s obsidian-kanban/scripts -p 'test_kanban.py'
-```
+GitHub Actions checks `test_kanban.py` (legacy), `test_dynamic_workflow.py`
+(integration/fault injection), a REAL upstream `--plan` run on the bundled
+script, and a no-model upstream `run/resume/verify` smoke. Passing these only
+proves mechanism compatibility, not higher real-world model quality.
 
-Then perform paired **real end-to-end tasks**, alternating execution order,
-using identical model/version, repository snapshot, task prompts, budgets,
-and independent hidden acceptance tests. Store JSONL with one row per execution:
-
-```json
-{"task_id":"auth-001","repeat":0,"variant":"legacy","passed":false,"wall_seconds":400,"tokens":23000}
-{"task_id":"auth-001","repeat":0,"variant":"dynamic","passed":true,"wall_seconds":310,"tokens":26000}
-```
-
-The rows above illustrate format **only** and must never be counted as results.
-For actual measurements:
-
-```bash
-python obsidian-kanban/scripts/kanban.py dynamic-eval results.jsonl
-```
-
-Primary metrics: verified completion, wrong-DONE rate (must be zero),
-wall-clock to verified output, tokens per verified task, manual interventions
-and crash recovery. Reserve unseen tasks and report confidence intervals and
-failures, not just the best run. The evaluator refuses unmatched run pairs,
-and only marks quality + speed as confirmed if sample and CI gates pass.
-Token efficiency is reported independently: it can worsen even when speed improves.
-
-## Release phases
-
-1. v0.1 (this branch): upstream runner bridge, manual approval, evidence gate,
-   legacy compatibility, offline regression tests, paired evaluator.
-2. v0.2: native Claude Code journal adapter, automatic upstream resume mapping,
-   append-only audit history, guard runtime log against worker tampering.
-3. v0.3: full paired E2E evaluation on unseen coding tasks, calibrated budgets,
-   fault injection (SIGKILL, duplicated finish, disk-write error, changed inputs).
-4. Promote to default **only if** measurements show gains without regressions.
+`dynamic-benchmark` drives actual Codex CLI runs on separate detached Git
+worktrees (single-agent legacy Kanban vs same-model dynamic workflow).
+It needs model login and explicit `--execute`. It writes raw evidence files,
+real token usage where measurable and acceptance results. `dynamic-eval`
+reports per-task clustered confidence intervals, rejecting incomplete paired
+records or absent resource measurements. A confirmed increase in quality/
+efficiency requires adequate unseen tasks and positive, robust comparisons.
+Until then the claim is **not proven**.
