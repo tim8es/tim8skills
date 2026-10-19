@@ -42,6 +42,7 @@ metadata:
 - [`references/dashboard.md`](references/dashboard.md) — web dashboard for users without Obsidian
 - [`references/task-hierarchy.md`](references/task-hierarchy.md) — task hierarchy and decomposition rules (§4)
 - [`references/workflow-contract.md`](references/workflow-contract.md) — runtime contract for columns, gates, hooks, and recovery for the autonomous loop
+- [`references/dynamic-workflow.md`](references/dynamic-workflow.md) — opt-in Claude-style JS dynamic workflow mode (do not emulate JS orchestration in prompt text)
 - [`references/board-format.md`](references/board-format.md) — Kanban board format and task categories (§6)
 - [`references/emoji-tags.md`](references/emoji-tags.md) — table of emoji tags and order (§7)
 - [`references/metadata.md`](references/metadata.md) — spec YAML template, reminder fields, date format (§8)
@@ -334,6 +335,22 @@ Full protocol — in [`agents/analyst.md`](agents/analyst.md). Briefly: propose 
 ---
 
 ## 13. Launching Subagents
+
+**Dynamic workflow mode (opt-in):** For large, independent, multi-stage work, first read
+[`references/dynamic-workflow.md`](references/dynamic-workflow.md). Preserve the
+existing BACKLOG → TODO → IN PROGRESS → TESTING → IN REVIEW → DONE lifecycle.
+The runtime uses the upstream Claude Code JS primitives, or the pinned standalone
+Codex re-host, rather than introducing a new DAG execution DSL. A dynamic task
+is marked `workflowMode: dynamic` in its spec. The `DONE` gate requires a
+completed run, a separately executed test command, and artifact hashes.
+Do not mark `DONE` based only on an agent's PASS message or checked boxes.
+Run `kanban.py dynamic plan` to review the script without launching workers;
+`run` always requires explicit approval. The legacy subagent protocol remains
+the default unless dynamic mode has been selected.
+
+### Existing subagent protocol
+
+
 
 Launching a subagent is the **default mode** for qualifying tasks, not an option. All the per-task "scaffolding" (role checklists, spec churn, lint, re-dump) is then executed within the subagent's context; the main agent pays ~1 summary line instead of hundreds of scaffolding lines — the biggest token lever for multitasking work. Two levels of delegation:
 
