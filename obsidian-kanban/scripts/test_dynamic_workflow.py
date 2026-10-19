@@ -100,7 +100,11 @@ class TestRunnerBridge(unittest.TestCase):
         (self.root / "artifact.txt").write_text("verified", encoding="utf-8")
         (self.root / "demo.workflow.js").write_text("// reviewed test workflow", encoding="utf-8")
         (self.root / "run-workflow.js").write_text(
-            'if(process.argv.includes("--plan")) console.log(JSON.stringify({planned:true}));'
+            'const fs=require("fs"); const argv=process.argv;'
+            'const i=argv.indexOf("--journal");'
+            'if(i>=0){fs.mkdirSync(require("path").dirname(argv[i+1]),{recursive:true});'
+            'fs.writeFileSync(argv[i+1],"");}'
+            'if(argv.includes("--plan"))console.log(JSON.stringify({planned:true}));'
             'else console.log(JSON.stringify({approved:true,answer:"ok"}));',
             encoding="utf-8")
 
@@ -166,6 +170,7 @@ class TestPairedBenchmark(unittest.TestCase):
         result = ev.summarize(pairs)
         self.assertFalse(result["quality_and_speed_improved_confirmed"])
         self.assertEqual(result["success_delta"], 0)
+        self.assertFalse(result["controls_matched_and_evidence_present"])
 
 
 
@@ -201,6 +206,65 @@ class TestPartialMoveFailure(unittest.TestCase):
             self.assertEqual(invoke(), 1)  # board is TODO; spec is still BACKLOG
             self.assertEqual(hooks._frontmatter_value(
                 (tasks / "specs" / "auth.md").read_text(encoding="utf-8"), "status"), "backlog")
+
+
+class TestWorkflowPreparation(unittest.TestCase):
+    def test_init_creates_real_template_inputs_and_opt_in_spec(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            specs = root / "tasks" / "specs"
+            specs.mkdir(parents=True)
+            spec = specs / "change.md"
+            spec.write_text("---\nstatus: backlog\n---\n"
+                            "# DEV: Change button\n"
+                            "## Definition of Done (DoD)\n"
+                            "- [ ] Button changes color on click\n"
+                            "- [ ] Existing tests pass\n"
+                            "## Changelog\n", encoding="utf-8")
+            from dynamic_prepare import init, paths
+            result = init(root, "change")
+            self.assertEqual(result["status"], "initialized")
+            wf, inputs = paths(root, "change")
+            self.assertTrue(wf.is_file())
+            self.assertTrue(inputs.is_file())
+            self.assertIn("workflowMode: dynamic", spec.read_text())
+            payload = json.loads(inputs.read_text(encoding="utf-8"))
+            self.assertEqual(len(payload["acceptance"]), 2)
+            self.assertEqual(init(root, "change")["status"], "already-initialized")
+            with self.assertRaises(ValueError):
+                init(root, "../bad")
+
+    def test_init_refuses_missing_dod(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            specs = root / "tasks" / "specs"
+            specs.mkdir(parents=True)
+            (specs / "x.md").write_text("---\nstatus: backlog\n---\n# Task\n")
+            from dynamic_prepare import init
+            with self.assertRaises(ValueError):
+                init(root, "x")
+
+    def test_different_inputs_invalidate_resume(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "tasks").mkdir()
+            (root / "sample.workflow.js").write_text("return {approved:true}", encoding="utf-8")
+            (root / "inputs.json").write_text('{"task":"first"}', encoding="utf-8")
+            runner = root / "run-workflow.js"
+            runner.write_text(
+                'const fs=require("fs");let a=process.argv,i=a.indexOf("--journal");'
+                'if(i>=0){fs.mkdirSync(require("path").dirname(a[i+1]),{recursive:true});'
+                'fs.writeFileSync(a[i+1],"");}'
+                'console.log(JSON.stringify({approved:true}));', encoding="utf-8")
+            common = [sys.executable,str(SCRIPTS / "kanban.py"),"dynamic"]
+            options = [str(root),"x","--workflow","sample.workflow.js","--runner",str(runner),
+                       "--args-file","inputs.json","--approve-execution"]
+            p = subprocess.run(common + ["run"] + options, capture_output=True, text=True)
+            self.assertEqual(p.returncode, 0, p.stderr)
+            (root / "inputs.json").write_text('{"task":"second"}', encoding="utf-8")
+            p = subprocess.run(common + ["resume"] + options, capture_output=True, text=True)
+            self.assertNotEqual(p.returncode, 0)
+            self.assertIn("changed", p.stderr)
 
 if __name__ == "__main__":
     unittest.main()
