@@ -85,6 +85,12 @@ def main() -> int:
                        "--sandbox", sandbox]
             if args.action == "plan":
                 command.append("--plan")
+            if args.action == "run":
+                # Invalidate any previous PASS before invoking a potentially crashing runner.
+                save_atomic(record, {"version": 1, "task": args.slug,
+                    "run": {"status": "running", "workflow": str(workflow.relative_to(workspace)),
+                            "workflow_sha256": artifact_digest(workspace, str(workflow.relative_to(workspace)))},
+                    "verification": {"passed": False}})
             rc, out, err, elapsed = run_external(command, workspace, args.timeout)
             if args.action == "plan":
                 print(json.dumps({"exit_code": rc, "wall_seconds": elapsed,
@@ -93,15 +99,19 @@ def main() -> int:
             try:
                 payload = json.loads(out.strip())
                 approved = payload.get("approved") if isinstance(payload, dict) else None
+                if approved is not True or payload.get("success") is False or payload.get("status") == "failed":
+                    rc = rc or 1
+                    err += "\\nWorkflow has no explicit approved:true or reports failure."
             except (json.JSONDecodeError, AttributeError):
                 approved = None
                 # Some upstream output may be plain text; process success alone is insufficient.
                 rc = rc or 1
                 err += "\nWorkflow did not return JSON; no success evidence."
             state = {"version": 1, "task": args.slug,
-                     "run": {"status": "completed" if rc == 0 and approved is not False else "failed",
+                     "run": {"status": "completed" if rc == 0 and approved is True else "failed",
                              "exit_code": rc, "approved": approved,
                              "wall_seconds": elapsed, "workflow": str(workflow.relative_to(workspace)),
+                             "workflow_sha256": artifact_digest(workspace, str(workflow.relative_to(workspace))),
                              "sandbox": sandbox, "budget": args.budget,
                              "stdout_tail": out[-4000:], "stderr_tail": err[-2000:]},
                      "verification": {"passed": False}}
