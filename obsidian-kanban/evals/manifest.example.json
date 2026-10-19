@@ -1,0 +1,19 @@
+{
+  "repo": "../..",
+  "ref": "main",
+  "tasks": [
+    {
+      "id": "slugify-case-1",
+      "prompt": "Add obsidian-kanban/evals/target/slugify.py with a function slugify(text: str) -> str. Lowercase ASCII, replace runs of non-alphanumeric characters by a single hyphen, trim leading and trailing hyphens, return empty string for empty inputs. Do not change unrelated files.",
+      "acceptance": [
+        "Public slugify function exists in target/slugify.py",
+        "Consecutive punctuation collapses into a single hyphen",
+        "Empty input returns empty string"
+      ],
+      "test_cmd": "python -c 'import importlib.util; p=\"obsidian-kanban/evals/target/slugify.py\"; s=importlib.util.spec_from_file_location(\"slug\",p); m=importlib.util.module_from_spec(s); s.loader.exec_module(m); assert m.slugify(\"Hi, WORLD!!!\") == \"hi-world\"; assert m.slugify(\"--\") == \"\"; assert m.slugify(\"a__b\") == \"a-b\"' ",
+      "artifacts": [
+        "obsidian-kanban/evals/target/slugify.py"
+      ]
+    }
+  ]
+}
