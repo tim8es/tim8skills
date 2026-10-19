@@ -20,6 +20,18 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+
+      - name: Checkout pinned upstream Claude-DSL runtime
+        uses: actions/checkout@v4
+        with:
+          repository: scasella/claude-dynamic-workflows-codex
+          ref: 16524bea870a51ac7bfb3dc7dce77e333c7a56e1
+          path: _upstream
+          persist-credentials: false
+      - name: Upstream JavaScript workflow dry-run
+        run: |
+          printf '%s' '{"task":"Add a small feature","acceptance":["Function works","Tests pass"],"allowWrites":true}' > /tmp/kanban-demo-args.json
+          node _upstream/runner/bin/run-workflow.js obsidian-kanban/templates/dynamic-implementation.workflow.js --plan --args-file /tmp/kanban-demo-args.json
       - name: Existing Kanban regression suite
         run: python -m unittest discover -s obsidian-kanban/scripts -p 'test_kanban.py' -q
       - name: Dynamic workflow bridge and evidence gate
