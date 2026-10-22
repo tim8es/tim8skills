@@ -21,6 +21,12 @@ A collection of reusable agent skills. Most existing skills were created for [Cl
 
 Each skill uses a `SKILL.md` with YAML frontmatter; some legacy skills use Claude Code-specific workflows.
 
+### Video Storycraft in ChatGPT
+
+The private [Video Storycraft plugin](https://chatgpt.com/plugins/plugins_6ada820248088191b6251addcea57dd5) is available to its owner in ChatGPT. Open the link and follow the installation or enabling flow; **creating a plugin does not install it automatically**. Call `@Video Storycraft` in ChatGPT for ideas, scripts, shot lists, QA, and retention reviews. It does not require external credentials or automatically publish videos.
+
+The ChatGPT plugin currently ships the same `SKILL.md` as this folder. Later GitHub changes do **not** auto-update a published plugin release; a separate release update is required.
+
 ### Video Storycraft in Codex
 
 This repository is a **skill catalog**, not itself a Codex installation directory. To use Video Storycraft across projects, copy `video-storycraft/` to `~/.agents/skills/video-storycraft/`. For a single project, put it in `<project>/.agents/skills/video-storycraft/`. Do **not** duplicate both installations unnecessarily.
