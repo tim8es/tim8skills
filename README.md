@@ -1,6 +1,6 @@
 # tim8skills
 
-A collection of [Claude Code](https://claude.com/claude-code) skills — packaged instructions and scripts that extend Claude Code for specific workflows: code review, task management, process consulting, feed monitoring, health data analysis, and Windows PowerShell safety.
+A collection of reusable agent skills. Most existing skills were created for [Claude Code](https://claude.com/claude-code); **Video Storycraft targets OpenAI Codex** and uses the standard `SKILL.md` format.
 
 ## Skills
 
@@ -19,7 +19,17 @@ A collection of [Claude Code](https://claude.com/claude-code) skills — package
 
 ## Usage
 
-Each skill directory follows the [Claude Code skill format](https://docs.claude.com/en/docs/claude-code/skills): a `SKILL.md` with YAML frontmatter (`name`, `description`) plus optional `references/`, `scripts/`, `templates/`, and `agents/` subdirectories. Copy a skill directory into your Claude Code skills folder to use it.
+Each skill uses a `SKILL.md` with YAML frontmatter; some legacy skills use Claude Code-specific workflows.
+
+### Video Storycraft in Codex
+
+This repository is a **skill catalog**, not itself a Codex installation directory. To use Video Storycraft across projects, copy `video-storycraft/` to `~/.agents/skills/video-storycraft/`. For a single project, put it in `<project>/.agents/skills/video-storycraft/`. Do **not** duplicate both installations unnecessarily.
+
+After PR #2 is merged, Codex can also install it by invoking `$skill-installer` with `https://github.com/tim8es/tim8skills/tree/main/video-storycraft`.
+
+Call `$video-storycraft` explicitly (for example, `$video-storycraft Напиши сценарий Shorts об AI-переводе EPUB`), or let Codex select it automatically based on the skill description. Restart Codex if the newly installed skill does not appear in `/skills`. No dependencies are required.
+
+Documentation: [Build Skills for Codex](https://learn.chatgpt.com/docs/build-skills).
 
 ## License
 
