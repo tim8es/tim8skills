@@ -1,6 +1,6 @@
 # tim8skills
 
-A collection of [Claude Code](https://claude.com/claude-code) skills — packaged instructions and scripts that extend Claude Code for specific workflows: code review, task management, process consulting, feed monitoring, health data analysis, and Windows PowerShell safety.
+A collection of reusable agent skills. Most existing skills were created for [Claude Code](https://claude.com/claude-code); **Video Storycraft targets OpenAI Codex** and uses the standard `SKILL.md` format.
 
 ## Skills
 
@@ -14,11 +14,28 @@ A collection of [Claude Code](https://claude.com/claude-code) skills — package
 | [ok-process-observability](ok-process-observability/) | Process-cost observability for AI agent work sessions: captures live workflow incidents, runs a post-run session self-audit, and reports deterministic context-cost metrics over the kanban task workspace. |
 | [process-manager-suite](process-manager-suite/) | Specialized workflows for process management in consulting: AS-IS/TO-BE process mapping, process audits, KPI/governance design, and SOP drafting. |
 | [feed-pulse](feed-pulse/) | FeedPulse monitors RSS and Atom feeds for content research — blogs, news sites, newsletters, and other feed sources. Supports multiple feeds with categories, filters, summaries, and bounded feed content. |
+| [video-storycraft](video-storycraft/) | Audience-first video ideas, hooks, scripts, voiceover, shot lists, production QA, and retention analysis — without additional runtime dependencies. |
 | [windows-pwsh-agent-guardrails](windows-pwsh-agent-guardrails/) | Guardrails for Windows PowerShell usage by AI agents: wrappers, paths, approvals, CLI quirks, and command-failure handling. |
 
 ## Usage
 
-Each skill directory follows the [Claude Code skill format](https://docs.claude.com/en/docs/claude-code/skills): a `SKILL.md` with YAML frontmatter (`name`, `description`) plus optional `references/`, `scripts/`, `templates/`, and `agents/` subdirectories. Copy a skill directory into your Claude Code skills folder to use it.
+Each skill uses a `SKILL.md` with YAML frontmatter; some legacy skills use Claude Code-specific workflows.
+
+### Video Storycraft in ChatGPT
+
+The private [Video Storycraft plugin](https://chatgpt.com/plugins/plugins_6ada820248088191b6251addcea57dd5) is available to its owner in ChatGPT. Open the link and follow the installation or enabling flow; **creating a plugin does not install it automatically**. Call `@Video Storycraft` in ChatGPT for ideas, scripts, shot lists, QA, and retention reviews. It does not require external credentials or automatically publish videos.
+
+The ChatGPT plugin currently ships the same `SKILL.md` as this folder. Later GitHub changes do **not** auto-update a published plugin release; a separate release update is required.
+
+### Video Storycraft in Codex
+
+This repository is a **skill catalog**, not itself a Codex installation directory. To use Video Storycraft across projects, copy `video-storycraft/` to `~/.agents/skills/video-storycraft/`. For a single project, put it in `<project>/.agents/skills/video-storycraft/`. Do **not** duplicate both installations unnecessarily.
+
+After PR #2 is merged, Codex can also install it by invoking `$skill-installer` with `https://github.com/tim8es/tim8skills/tree/main/video-storycraft`.
+
+Call `$video-storycraft` explicitly (for example, `$video-storycraft Напиши сценарий Shorts об AI-переводе EPUB`), or let Codex select it automatically based on the skill description. Restart Codex if the newly installed skill does not appear in `/skills`. No dependencies are required.
+
+Documentation: [Build Skills for Codex](https://learn.chatgpt.com/docs/build-skills).
 
 ## License
 
