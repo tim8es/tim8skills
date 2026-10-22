@@ -1,11 +1,19 @@
 ---
 name: video-storycraft
-description: "Develop and improve watchable videos: audience-first ideas, hooks, scripts, voiceover, shot lists, production plans, titles/thumbnails, fact-checks, editing notes, and post-publication retention reviews. Use for Shorts/Reels or long-form video; works from a topic, product, rough draft, transcript, or real demo."
+description: "Plan and improve videos for YouTube, Shorts and Reels: ideas, hooks, voiceover scripts, shot lists, editing briefs, and retention reviews. Use for requests about video ideas, scenarios, shooting or editing plans (идеи видео, сценарий, хук, монтаж, удержание); not for unrelated code tasks or video rendering alone."
 ---
 
 # Video Storycraft
 
 Цель: сделать **доказуемо полезное, интересное и снимаемое видео** для конкретного зрителя. Не обещай просмотров или удержания: сценарий — гипотеза, поведение аудитории проверяется после публикации.
+
+## Использование в Codex
+
+- Вызывай явно через `$video-storycraft` или используй при совпадении запроса с описанием скилла.
+- Для видео о существующем проекте сначала изучи **релевантные** файлы, скринкасты и тесты в доступной рабочей папке. Не утверждай, что просмотрел видео, запустил код или проверил продукт, если этого не было. Не трать контекст на чтение всего репозитория.
+- Используй только реально доступные средства Codex. При нехватке файла, доступа, медиа или онлайн-данных продолжай с явно отмеченными допущениями и списком недостающих доказательств.
+- Пиши результат в ответе; сохраняй сценарий или редактируй файлы проекта, только если пользователь попросил создать/изменить файлы. Не запускай публикацию, рассылку и внешние действия без явного запроса и необходимых разрешений.
+- Сначала выполни редакционный этап. Генерируй скрипты/код для обработки медиа, вызывай FFmpeg или другие CLI лишь когда этого требует запрос и доступно исходное медиа; проверяй фактический результат, а не факт запуска команды.
 
 ## Маршрутизация: делай только запрошенный этап
 
