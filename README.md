@@ -14,6 +14,7 @@ A collection of [Claude Code](https://claude.com/claude-code) skills — package
 | [ok-process-observability](ok-process-observability/) | Process-cost observability for AI agent work sessions: captures live workflow incidents, runs a post-run session self-audit, and reports deterministic context-cost metrics over the kanban task workspace. |
 | [process-manager-suite](process-manager-suite/) | Specialized workflows for process management in consulting: AS-IS/TO-BE process mapping, process audits, KPI/governance design, and SOP drafting. |
 | [feed-pulse](feed-pulse/) | FeedPulse monitors RSS and Atom feeds for content research — blogs, news sites, newsletters, and other feed sources. Supports multiple feeds with categories, filters, summaries, and bounded feed content. |
+| [video-storycraft](video-storycraft/) | Audience-first video ideas, hooks, scripts, voiceover, shot lists, production QA, and retention analysis — without additional runtime dependencies. |
 | [windows-pwsh-agent-guardrails](windows-pwsh-agent-guardrails/) | Guardrails for Windows PowerShell usage by AI agents: wrappers, paths, approvals, CLI quirks, and command-failure handling. |
 
 ## Usage
